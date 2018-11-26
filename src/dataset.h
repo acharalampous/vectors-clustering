@@ -11,7 +11,7 @@
 #include <array>
 #include <vector>
 
-#define D 128 // number of dimensions
+#define D 203 // number of dimensions
 
 /* Implemenention of data Container that holds vectors as records */
 
@@ -20,11 +20,12 @@
 template <class T>
 class vector_item{
     private:
+        int index; // index of vector_item in containter
         std::string item_id; // name of vector
         std::array<T, D> coordinates; // points of vector
     public:
-        /* Given the points of vector and id, create a new vector_item */
-        vector_item(std::string&);
+        /* Given the points of vector,id and index, create a new vector_item */
+        vector_item(std::string&, int);
 
         /* Accessors */
         std::string& get_id(); // returns id as string

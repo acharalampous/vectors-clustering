@@ -19,6 +19,9 @@ using namespace std;
 template class vector_item<int>;
 template class dataset<int>;
 
+template class vector_item<double>;
+template class dataset<double>;
+
 
 /*  Implementation of all functions of dataset
  *  and vector_item. Definitions found in
@@ -29,35 +32,48 @@ template class dataset<int>;
 //** VECTOR_ITEM **//
 /////////////////////
 template <class T>
-vector_item<T>::vector_item(string& new_vector){
-    string point;
-	string id;
+vector_item<T>::vector_item(string& new_vector, int index){
+    size_t str_start = 0; // start of each dimension's point(char of string holding point)
+    size_t str_end; // end of each dimension's point(char of string holding point) 
+    int i = 0; // index for point to be inserted in array
 
-	istringstream iss(new_vector, istringstream::in); 
+    /* Assign index(position in container) of vector */
+    this->index = index;
 
-    /* Extract item name */
-    iss >> id;
+    /* Reading id of vector */
+    str_end = new_vector.find_first_of("\t,", str_start);
+    this->item_id = new_vector.substr(str_start, str_end - str_start);
+    
+    str_start = str_end + 1;
 
-    /* Save item name */
-    item_id = id;    
-
-    /* Extract all points from string and insert in array */
-    int i = 0;
     try {
-        while( iss >> point )     
+        /* Extract all points from string and insert in array */ 
+        while ((str_end = new_vector.find_first_of("\t ,", str_start)) != string::npos)
         {
-            //if(!isNumber(point)){} // VERY SLOW
-            coordinates[i] = stoi(point); 
-            i++;
-        }    
-    }catch(std::invalid_argument& e){
-        cout << "[ERROR] Invalid vector was given. Probably characters were provided. Check your file" << endl;
+            if (str_end > str_start)
+                if(i >= D)
+                    throw out_of_range("Out_of_range");
+                coordinates[i++] = stod(new_vector.substr(str_start, str_end - str_start));
+
+            str_start = str_end + 1; // move to next point
+            
+        }
+        
+        if (str_start < new_vector.length())
+            coordinates[i++] = stod(new_vector.substr(str_start, string::npos));
+    }catch(out_of_range& e2){
+        cout << "[Creation of vector_item][line of file: " << index + 1 << " || Id of vector: " << this->item_id << " ] Larger number of dimensions in vector given!" << endl;
+        cout << "Aborting..." << endl;
+        exit(-1);
+    }catch(invalid_argument& e1){
+        cout << "[ERROR][line of file: " << index + 1 << " || Id of vector: " << this->item_id << " ] Invalid vector was given. Probably characters were provided. Check your file." << endl;
         cout << "Aborting..." << endl; 
         exit(-1);
     }
 
-    if(coordinates.size() != D){ // check if valid points where given
-        cout << "[Creation of vector_item] Invalid dimensions in vector item given! Abort." << endl;
+    if(i < D){ // check if valid points were given
+        cout << "[Creation of vector_item][line of file: " << index + 1 << " || Id of vector: " << this->item_id << " ] Invalid dimensions in vector given! Fewer dimensions were provided" << endl;
+        cout << "Aborting..." << endl;
         exit(-1);
     } 
 }
@@ -109,7 +125,7 @@ dataset<T>::~dataset(){
 template <class T>
 void dataset<T>::add_vector(string& new_vector){
     /* Push new vector */
-    vectors.push_back(new vector_item<T>(new_vector));
+    vectors.push_back(new vector_item<T>(new_vector, counter));
     
     /* Increase num of vectors */
     counter++;
