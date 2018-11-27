@@ -7,12 +7,15 @@
  */
 /********************************/
 #include <iostream>
+#include <fstream>
 
+#include "utils.h"
 #include "clusters.h"
 
 using namespace std;
 
 template class cluster<double>;
+template class cl_management<double>;
 
 
 /*  Implementation of all functions of cluster_info
@@ -72,7 +75,7 @@ void cluster_info::reset_info(){
 template <class T>
 cluster<T>::cluster(int cluster_num){
     this->cluster_num = cluster_num;
-    this->real_centroid = -1;
+    this->centroid_type = -1;
     this->centroid = NULL;
 }
 
@@ -94,14 +97,119 @@ vector_item<T>* cluster<T>::get_centroid(){
     return this->centroid;
 }
 
-/* Returns pointer to centroid */
-template <class T>
-vector_item<T>* cluster<T>::get_centroid(){
-    return this->centroid;
-}
-
-/* Returns number of vector in cluster */
+/* Returns number of vectors in cluster */
 template <class T>
 int cluster<T>::get_size(){
-    return this->vectors.get_size();
+    return this->vectors.size();
+}
+
+template <class T>
+void cluster<T>::set_centroid(vector_item<T>* new_centroid){
+    this->centroid = new_centroid;
+}
+
+template <class T>
+void cluster<T>::set_centroid_type(int type){
+    this->centroid_type = type;
+}
+
+template <class T>
+void cluster<T>::print(){
+    cout << "Cluster #" << this->get_cluster_num() << " || Centroid: " << get_centroid()->get_id() << endl;
+
+    for(unsigned int i = 0; i < vectors.size(); i++){
+        cout << "\t" << i << ". " << vectors[i]->get_id() << endl;
+    }
+}
+
+
+
+///////////////////
+// CL_MANAGEMENT //
+///////////////////
+template <class T>
+cl_management<T>::cl_management(int metric, int k, int init_alg){
+    all_vectors = NULL;
+    init_algorithm = NULL;
+
+    this->metric = metric;
+    this->k = k;
+
+    for(int i = 0; i < k; i++)
+        clusters.push_back(new cluster<T>(i));
+
+    if(init_alg == 1)
+        init_algorithm = new cl_init_random<T>;
+    else if(init_alg == 2)
+        init_algorithm = new cl_init_kmeans<T>;
+
+    if(metric == 1)
+        dist_function = &eucl_distance<double>;
+    else if(metric == 2)
+        dist_function = &cs_distance<double>;
+}
+
+template <class T>
+void cl_management<T>::fill_dataset(ifstream& input){
+    string line;
+    
+    if(this->all_vectors != NULL){
+        cout << "Error. Dataset already created" << endl;
+        exit(-1);
+    }
+
+    if(this->vectors_info.size() != 0){
+        cout << "Error. Vectors info already created" << endl;
+        exit(-1);
+    }
+
+
+    /* Create new dataset */
+    this->all_vectors = new dataset<T>;
+
+    int i = 0;
+    /* Scan all vectors in input file, line by line */
+    while(getline(input, line)){
+        this->all_vectors->add_vector(line);
+        this->vectors_info.push_back(new cluster_info(i++));
+    }
+}
+
+template <class T>
+void cl_management<T>::init_clusters(){
+    this->init_algorithm->init_clusters(*this);
+}
+
+template <class T>
+dataset<T>* cl_management<T>::get_dataset(){
+    return this->all_vectors;
+}
+
+template <class T>
+vector<cluster_info*>& cl_management<T>::get_vectors_info(){
+    return this->vectors_info;
+}
+
+template <class T>
+vector<cluster<T>*>& cl_management<T>::get_clusters(){
+    return this->clusters;
+}
+
+
+/* Returns number of k(total clusters) */
+template <class T>
+int cl_management<T>::get_k(){
+    return this->k;
+}
+
+
+template <class T>
+void cl_management<T>::print(){
+    for(unsigned int i = 0; i < clusters.size(); i++)
+        clusters[i]->print();
+}
+
+template <class T>
+dist_func cl_management<T>::get_dist_func(){
+    return this->dist_function;
 }

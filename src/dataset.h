@@ -31,6 +31,7 @@ class vector_item{
         std::string& get_id(); // returns id as string
         std::array<T, D>& get_points(); // returns an array with all the points of vector
         int get_size(); // returns size of vector
+        int get_index(); // return index of vector in dataset
                 
         /* Print vector stats */
         void print();

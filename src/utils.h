@@ -60,11 +60,11 @@ double get_radius(std::string&);
 
 /* Computes the euclidean distance of 2 vectors */
 template <class T>
-float eucl_distance(vector_item<T>&, vector_item<T>&);
+double eucl_distance(vector_item<T>&, vector_item<T>&);
 
 /* Computes the cosine distance of 2 vectors */
 template <class T>
-float cs_distance(vector_item<T>&, vector_item<T>&);
+double cs_distance(vector_item<T>&, vector_item<T>&);
 
 /* Asks user if he wants to continue to a new execution and if he wants */
 /* to use different files, returning the corresponding choice */

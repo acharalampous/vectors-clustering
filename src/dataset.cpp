@@ -50,10 +50,12 @@ vector_item<T>::vector_item(string& new_vector, int index){
         /* Extract all points from string and insert in array */ 
         while ((str_end = new_vector.find_first_of("\t ,", str_start)) != string::npos)
         {
-            if (str_end > str_start)
-                if(i >= D)
+            if (str_end > str_start){
+                if(i >= D){
                     throw out_of_range("Out_of_range");
+                }
                 coordinates[i++] = stod(new_vector.substr(str_start, str_end - str_start));
+            }
 
             str_start = str_end + 1; // move to next point
             
@@ -94,6 +96,12 @@ array<T, D>& vector_item<T>::get_points(){
 template <class T>
 int vector_item<T>::get_size(){
     return coordinates.size();
+}
+
+/* Returns size of vector(number of dimensions) */
+template <class T>
+int vector_item<T>::get_index(){
+    return this->index;
 }
 
 /* Print info about vector_item(Debugging) */

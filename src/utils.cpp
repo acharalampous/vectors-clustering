@@ -15,8 +15,8 @@
 
 using namespace std;
 
-template float eucl_distance(vector_item<int>&, vector_item<int>&);
-template float cs_distance(vector_item<int>&, vector_item<int>&);
+template double eucl_distance(vector_item<double>&, vector_item<double>&);
+template double cs_distance(vector_item<double>&, vector_item<double>&);
 template float exchausting_s(dataset<int>&, vector_item<int>&, int);
 
 
@@ -360,7 +360,7 @@ double get_radius(std::string& radius){
 }
 
 template <class T>
-float eucl_distance(vector_item<T>& vec1, vector_item<T>& vec2){
+double eucl_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 	/* Compute sqrt((Sum((ai - bi)^2))), for all points */
 
     if(vec1.get_size() != vec2.get_size()){
@@ -368,7 +368,7 @@ float eucl_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 		exit(0);
 	}
 
-	float dist = 0.0;
+	double dist = 0.0;
 
 	array<T, D>& arr1 = vec1.get_points();
 	array<T, D>& arr2 = vec2.get_points();
@@ -383,17 +383,17 @@ float eucl_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 }
 
 template <class T>
-float cs_distance(vector_item<T>& vec1, vector_item<T>& vec2){
+double cs_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 	/* Compute (1 - ((vec1 * vec2) / (||vec1||*||vec2||))) */
  	if(vec1.get_size() != vec2.get_size()){
 		cout << "Invalid dimensions" << endl;
 		exit(0);
 	}
 
-	float dist;
-	float euc_dist = 0.0;
-	float arr1_norm = 0.0;
-	float arr2_norm = 0.0;
+	double dist;
+	double euc_dist = 0.0;
+	double arr1_norm = 0.0;
+	double arr2_norm = 0.0;
 
 	array<T, D>& arr1 = vec1.get_points();
 	array<T, D>& arr2 = vec2.get_points();
