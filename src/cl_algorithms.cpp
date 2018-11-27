@@ -91,14 +91,18 @@ void cl_init_kmeans<T>::init_clusters(cl_management<T>& cl_manage){
     for(int i = 0; i < num_of_vectors; i++) // Initialize array
         min_distances.push_back(0.0);
     
-    T max_distance = 0.0; // distance of the furthest vector
+    T total_distance = 0.0; // distance of the furthest vector
 
     vector<dist_mapping> probs_array; // array that holds probabilities
 
     for(int i = 1; i < k; i++){
         probs_array.clear();
-        max_distance = 0.0;
+        probs_array.push_back(dist_mapping(-1, 0.0));
+        total_distance = 0.0;
         vector_item<T>* last_centroid = clusters[i - 1]->get_centroid();
+
+        if(last_centroid == NULL)
+            return;
 
         /* First iteration, so wont check for min_distance(minimize checks) */
         if(i == 1){
@@ -115,8 +119,7 @@ void cl_init_kmeans<T>::init_clusters(cl_management<T>& cl_manage){
 
                 /* Set minimum distance */
                 min_distances[j] = dist_function(*curr_item, *last_centroid);
-                if(min_distances[j] > max_distance)
-                    max_distance = min_distances[j];
+                total_distance += pow(min_distances[j], 2); // keep total distance
             
                 probs_array.push_back(dist_mapping(curr_item->get_index(), min_distances[j]));
 
@@ -135,21 +138,26 @@ void cl_init_kmeans<T>::init_clusters(cl_management<T>& cl_manage){
                 double dist = dist_function(*curr_item, *last_centroid);
                 if(dist < min_distances[j]){
                     min_distances[j] = dist;
-
-                    if(min_distances[j] > max_distance)
-                        max_distance = min_distances[j];
                 }
 
+                total_distance += pow(min_distances[j], 2);
+            
                 probs_array.push_back(dist_mapping(curr_item->get_index(), min_distances[j]));
             }
         } // end else i != 1
         
         /* Normalize distances */
-        probs_array[0].distance = ((double)pow(probs_array[0].distance, 2)) / max_distance;
-        
-        for(int j = 1; j < num_of_vectors - i; j++){
-            probs_array[j].distance = (probs_array[j - 1].distance + ((double)pow(probs_array[j].distance, 2))) / max_distance;
+        unsigned int array_sz = probs_array.size();
+        for(unsigned int j = 1; j < array_sz; j++){
+            probs_array[j].distance = probs_array[j - 1].distance + (pow(probs_array[j].distance, 2) / total_distance);
         }
+
+        sel = get_next_centroid(probs_array);
+        clusters[i]->set_centroid(all_vectors->get_item(sel));
+        clusters[i]->set_centroid_type(1);
+        
+        vectors_info[sel]->set_centroid();
+        vectors_info[sel]->set_cluster(i);
     }
 }
 
@@ -173,7 +181,7 @@ int cl_init_kmeans<T>::get_next_centroid(vector<dist_mapping>& probs_array){
         int pivot = (end + start) / 2;
         
         if(val == probs_array[pivot].distance)
-            return pivot;
+            return probs_array[pivot].index;
         else if(val >= probs_array[pivot + 1].distance){
             start = pivot;
             continue;
@@ -183,7 +191,7 @@ int cl_init_kmeans<T>::get_next_centroid(vector<dist_mapping>& probs_array){
             continue;
         }
         else if(val > probs_array[pivot].distance && val < probs_array[pivot + 1].distance)
-            return pivot + 1;
+            return probs_array[pivot + 1].index;
 
         cout << "[BINARY SEARCH]I SHOULD NOT BE HERE" << endl;
     }
