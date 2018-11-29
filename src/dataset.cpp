@@ -88,6 +88,17 @@ vector_item<T>::vector_item(){
         coordinates[i] = 0;
 }
 
+template <class T>
+int vector_item<T>::is_equal(vector_item<T>& vec){
+    for(int i = 0; i < D; i++){
+        if(this->coordinates[i] != vec.coordinates[i])
+            return 0;
+    }
+
+    return 1; // Same vectors
+}
+
+
 /* Returns item name */
 template <class T>
 string& vector_item<T>::get_id(){

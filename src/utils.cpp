@@ -422,14 +422,15 @@ int get_second_best(vector_item<T>& query, int cl_num, vector<cluster<T>*>& clus
     int sec_best = cl_num;
     double min_distance;
     int k = clusters.size();
+
     int flag = 0; // min_distance was initialized
 
     for(int i = 0; i < k; i++){
-        if(i == cl_num)
+        if(i == cl_num) // if same cluster, dont calculate
             continue;
         
         double curr_dist = dist(query, *(clusters[i]->get_centroid()));
-        if(flag == 0){
+        if(flag == 0){ // must initialize flag
             sec_best = i;
             min_distance = curr_dist;
             flag = 1;
@@ -440,21 +441,25 @@ int get_second_best(vector_item<T>& query, int cl_num, vector<cluster<T>*>& clus
                 min_distance = curr_dist;
             }
         }
-    }
+    } // end for all clusters
+
+    return sec_best;
 }
 
 template <class T>
 double calculate_b(vector_item<T>& query, cluster<T>* cl, dist_func& dist){
-    int num_of_vectors = cl->get_size() + 1;
+    int num_of_vectors = cl->get_size();
     double b_value = 0.0;
+
+    /* Calculate sum of distances of all vectors in cluster given */
+    for(int i = 0; i < num_of_vectors; i++)
+        b_value += dist(query, *(cl->get_vector(i)));
+
     if(cl->get_centroid_type() == 1){
         num_of_vectors++;
 
         b_value += dist(query, *(cl->get_centroid()));
     }
-
-    for(int i = 0; i < num_of_vectors; i++)
-        b_value += dist(query, *(cl->get_vector(i)));
 
     return b_value /= double(num_of_vectors);
 }

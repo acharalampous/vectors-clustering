@@ -10,10 +10,10 @@
 using namespace std;
 
 int main(void){
-
+    int i = 0;
     ifstream input("twitter_dataset_small_v2.csv");
 
-    cl_management<double> cl_manage(1, 10, 2, 1, 1);
+    cl_management<double> cl_manage(1, 4, 1, 1, 1);
     cl_manage.fill_dataset(input);
 
     cl_manage.init_clusters();
@@ -22,17 +22,14 @@ int main(void){
     cl_manage.assign_clusters();
     cout << "Done assigning to clusters" << endl;
 
-    cl_manage.print();
-
-    cout << "About to update clusters" << endl;
-    cl_manage.update_clusters();
-    
-    cout << "Done updating clusters" << endl;
-
-
-    cout << "----------------Wait, turn around----------------" << endl;
-
-    cl_manage.assign_clusters();
+    while(1){
+        int res = cl_manage.update_clusters();
+        cl_manage.assign_clusters();
+        cout << "Iteration #" << i++ << ":" << endl;
+        if(res == 0)
+            break;
+        
+    }
 
     cl_manage.evaluation();
     cout << "-----------------------------------" << endl;

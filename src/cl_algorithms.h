@@ -86,7 +86,7 @@ class cl_update_algorithm{
     protected:
 
     public:
-        virtual void update_clusters(cl_management<T>&) = 0;
+        virtual int update_clusters(cl_management<T>&) = 0;
 };
 
 template <class T>
@@ -94,9 +94,9 @@ class cl_update_kmeans : public cl_update_algorithm<T>{
     private:
 
     public:
-        void update_clusters(cl_management<T>&);
-        
+        int update_clusters(cl_management<T>&);
         vector_item<T>* get_new_centroid(cluster<T>&);
+        
 };
 
 template <class T>
@@ -104,7 +104,7 @@ class cl_update_pam : public cl_update_algorithm<T>{
     private:
 
     public:
-        void update_clusters(cl_management<T>&);
+        int update_clusters(cl_management<T>&);
 
         /* Calculates the average distance for every vector in given cluster */
         /* and returns the vector with minimum average distance              */

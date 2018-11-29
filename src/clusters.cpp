@@ -100,24 +100,29 @@ void cluster<T>::add_vector(vector_item<T>* new_vector){
 
 
 template <class T>
-void cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
-    int num_of_vectors = vectors.size() + 1;
+double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
+    /* Get number of vectors in cluster */
+    int num_of_vectors = vectors.size();
+    int ct = -1; // centroid_type -> 1: if there is centroid from dataset, else 0
     double* s_values;
-    double s_of_cluster = 0.0;
+    double s_of_cluster = 0.0; // Average s(i) of cluster
 
     /* Must not perform silhouette for centroid if it is not in dataset */
     if(this->get_centroid_type() == 0){
-        num_of_vectors--;
+        ct = 0;
         s_values = new double[num_of_vectors];
 
-        /* Silhouettes Values */
+        /* Initialize Silhouettes Values */
         for(int i = 0; i < num_of_vectors; i++)
             s_values[i] = 0.0;
     }
     else{
+        ct = 1;
         vector_item<T>* old_centroid = centroid;
-        s_values = new double[num_of_vectors];
-        for(int i = 0; i < num_of_vectors - 1; i++){
+        s_values = new double[num_of_vectors + 1];
+
+        /* Calculate a(i) of centroid */
+        for(int i = 0; i < num_of_vectors; i++){
             
             /* Get current vector from cluster */
             vector_item<T>* curr_vector = vectors[i];
@@ -125,14 +130,17 @@ void cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
             /* Calculate distance and add to distances */
             double distance = dist(*old_centroid, *curr_vector);
             s_values[0] += distance;
-            s_values[i] = distance;
+            s_values[i + 1] = distance;
         }
 
-        s_values[0] /= num_of_vectors;
+        /* Calculate average a(i) */
+        s_values[0] /= num_of_vectors; // except itself
 
+        /* Find nearest (or 2nd nearest) cluster */
         int sec_best = get_second_best(*old_centroid, cluster_num, clusters, dist);
         double b_value = calculate_b(*old_centroid, clusters[sec_best], dist);
     
+        /* Check for max{b(i), a(i)} */
         if(s_values[0] >= b_value){
             s_values[0] = (b_value - s_values[0]) / s_values[0];
         }
@@ -140,45 +148,47 @@ void cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
             s_values[0] = (b_value - s_values[0]) / b_value;
         }
 
-        s_of_cluster += s_values[0];
+        s_of_cluster += s_values[0]; // increase total s(i) of cluster
     }
 
 
-    
     for(int i = 0; i < num_of_vectors; i++){
         /* Get current vector from cluster */
         vector_item<T>* curr_vector = vectors[i];
 
         /* Calculate the distance with the remaining vectors */
-        for(int j = i + 1; j < num_of_vectors - 1; j++){
+        for(int j = i + 1; j < num_of_vectors; j++){
 
             vector_item<T>* next_vector = vectors[j];
 
             /* Calculate distance and add to distances */
             double distance = dist(*curr_vector, *next_vector);
-            s_values[i] += distance;
-            s_values[j] += distance;  
+            s_values[i + ct] += distance;
+            s_values[j + ct] += distance;  
 
         }
 
-        s_values[i] /= double(num_of_vectors);
+        s_values[i + ct] /= double(num_of_vectors + ct - 1); // except itself
 
         int sec_best = get_second_best(*curr_vector, cluster_num, clusters, dist);
         double b_value = calculate_b(*curr_vector, clusters[sec_best], dist);
     
-        if(s_values[i] >= b_value){
-            s_values[i] = (b_value - s_values[i]) / s_values[i];
+        if(s_values[i + ct] >= b_value){
+            s_values[i + ct] = (b_value - s_values[i + ct]) / s_values[i + ct];
         }
         else{
-            s_values[i] = (b_value - s_values[i]) / b_value;
+            s_values[i + ct] = (b_value - s_values[i + ct]) / b_value;
         }
 
-        s_of_cluster += s_values[i];
+        s_of_cluster += s_values[i + ct];
     }
 
-    s_of_cluster /= (double)num_of_vectors;
+    double s_total = s_of_cluster;
+    s_of_cluster /= (double)num_of_vectors + ct;
 
     cout << "s(" << cluster_num << ") = " << s_of_cluster << endl;
+
+    return s_total;
 }
 
 
@@ -311,8 +321,8 @@ void cl_management<T>::assign_clusters(){
 }
 
 template <class T>
-void cl_management<T>::update_clusters(){
-    this->update_algorithm->update_clusters(*this);
+int cl_management<T>::update_clusters(){
+    return this->update_algorithm->update_clusters(*this);
 }
 
 
@@ -353,8 +363,15 @@ dist_func cl_management<T>::get_dist_func(){
 
 template <class T>
 void cl_management<T>::evaluation(){
+    double s_total = 0.0;
+    int total_vectors = all_vectors->get_counter();
+    cout << "SILHOUETTES: " << endl;
+    cout << "-------------" << endl;
     for(int i = 0; i < k; i++){
         cluster<T>* curr_cluster = clusters[i];
-        curr_cluster->evaluation(clusters, dist_function);
+        s_total = curr_cluster->evaluation(clusters, dist_function);
+        s_total /= double(total_vectors);
     }
+
+    cout << "**s_total = " << s_total << endl;
 }

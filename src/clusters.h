@@ -72,7 +72,7 @@ class cluster{
         cluster(int);
 
         void add_vector(vector_item<T>*);
-        void evaluation(std::vector<cluster<T>*>&, dist_func&);
+        double evaluation(std::vector<cluster<T>*>&, dist_func&);
     
         /* Accessors */
         int get_cluster_num();
@@ -116,7 +116,7 @@ class cl_management{
         void fill_dataset(std::ifstream&);
         void init_clusters();
         void assign_clusters();
-        void update_clusters();
+        int update_clusters();
         void evaluation();
         void cluster_eval();
 

@@ -275,7 +275,9 @@ void cl_assign_lloyd<T>::assign_clusters(cl_management<T>& cl_manage){
 // CL_UPDATE_KMEANS //
 //////////////////////
 template <class T>
-void cl_update_kmeans<T>::update_clusters(cl_management<T>& cl_manage){
+int cl_update_kmeans<T>::update_clusters(cl_management<T>& cl_manage){
+    int made_changes = 0; // 1: at least one centroid changed, 0: no changes
+
     vector<cluster_info*>& vectors_info = cl_manage.get_vectors_info();
     vector<cluster<T>*>& clusters = cl_manage.get_clusters();
     
@@ -291,6 +293,13 @@ void cl_update_kmeans<T>::update_clusters(cl_management<T>& cl_manage){
         vector_item<T>* new_centroid = get_new_centroid(*clusters[i]);
 
         vector_item<T>* old_centroid = clusters[i]->get_centroid();
+
+        /* If not differences found yet, check for different centroid */
+        if(made_changes == 0){
+            int equal = new_centroid->is_equal(*old_centroid);
+            made_changes = (equal != 1) ? 1 : 0;
+        }
+
         /* Centroid not in dataset, so it must be destroyed */
         if(clusters[i]->get_centroid_type() == 0)
             delete old_centroid;
@@ -317,6 +326,8 @@ void cl_update_kmeans<T>::update_clusters(cl_management<T>& cl_manage){
         clusters[i]->set_centroid_type(0);
 
     }   
+
+    return made_changes;
 }
 
 template <class T>
@@ -358,7 +369,9 @@ vector_item<T>* cl_update_kmeans<T>::get_new_centroid(cluster<T>& cl){
 // CL_UPDATE_PAM //
 ///////////////////
 template <class T>
-void cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
+int cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
+    int made_changes = 0; // 1: at least one centroid changes, 2: no changes
+    
     vector<cluster_info*>& vectors_info = cl_manage.get_vectors_info();
     vector<cluster<T>*>& clusters = cl_manage.get_clusters();
     
@@ -374,6 +387,12 @@ void cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
         vector_item<T>* new_centroid = get_new_centroid(*(clusters[i]), dist_function);
 
         vector_item<T>* old_centroid = clusters[i]->get_centroid();
+
+        /* If not differences found yet, check for different centroid */
+        if(made_changes == 0){
+            int equal = new_centroid->is_equal(*old_centroid);
+            made_changes = (equal == 1) ? 0 : 1;
+        }
 
         /* Get index of old centroid to reset it(stop it from being centroid) */
         int old_index = old_centroid->get_index();
@@ -400,6 +419,8 @@ void cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
         vectors_info[centroid_index]->set_cluster(i);
 
     }
+
+    return made_changes;
 }
 
 template <class T>

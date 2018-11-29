@@ -28,6 +28,8 @@ class vector_item{
         vector_item(std::string&, int);
         vector_item();
 
+        int is_equal(vector_item<T>&);
+
         /* Accessors */
         std::string& get_id(); // returns id as string
         std::array<T, D>& get_points(); // returns an array with all the points of vector
