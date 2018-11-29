@@ -30,6 +30,7 @@ cluster_info::cluster_info(int index){
     is_centroid = 0;
     cluster_num = -1;
     this->index = index;
+    distance = -1.0;
 }
 
 /* Returns is_centroid */
@@ -47,6 +48,11 @@ int cluster_info::get_index(){
     return this->index;
 }
 
+/* Returns the distance of vector to centroid */
+double cluster_info::get_distance(){
+    return this->distance;
+}
+
 /* Set is_centroid as 1 */
 void cluster_info::set_centroid(){
     this->is_centroid = 1;
@@ -62,8 +68,15 @@ void cluster_info::set_index(int new_index){
     this->index = 1;
 }
 
+/* Set distance of vector to centroid */
+void cluster_info::set_distance(double new_dist){
+    this->distance = new_dist;
+}
+
+
 /* Unassign vector from cluster, setting cluster_num to -1 */
 void cluster_info::reset_info(){
+    this->is_centroid = 0;
     this->cluster_num = -1;
 }
 
@@ -78,6 +91,96 @@ cluster<T>::cluster(int cluster_num){
     this->centroid_type = -1;
     this->centroid = NULL;
 }
+
+template <class T>
+void cluster<T>::add_vector(vector_item<T>* new_vector){
+    this->vectors.push_back(new_vector);
+
+}
+
+
+template <class T>
+void cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
+    int num_of_vectors = vectors.size() + 1;
+    double* s_values;
+    double s_of_cluster = 0.0;
+
+    /* Must not perform silhouette for centroid if it is not in dataset */
+    if(this->get_centroid_type() == 0){
+        num_of_vectors--;
+        s_values = new double[num_of_vectors];
+
+        /* Silhouettes Values */
+        for(int i = 0; i < num_of_vectors; i++)
+            s_values[i] = 0.0;
+    }
+    else{
+        vector_item<T>* old_centroid = centroid;
+        s_values = new double[num_of_vectors];
+        for(int i = 0; i < num_of_vectors - 1; i++){
+            
+            /* Get current vector from cluster */
+            vector_item<T>* curr_vector = vectors[i];
+
+            /* Calculate distance and add to distances */
+            double distance = dist(*old_centroid, *curr_vector);
+            s_values[0] += distance;
+            s_values[i] = distance;
+        }
+
+        s_values[0] /= num_of_vectors;
+
+        int sec_best = get_second_best(*old_centroid, cluster_num, clusters, dist);
+        double b_value = calculate_b(*old_centroid, clusters[sec_best], dist);
+    
+        if(s_values[0] >= b_value){
+            s_values[0] = (b_value - s_values[0]) / s_values[0];
+        }
+        else{
+            s_values[0] = (b_value - s_values[0]) / b_value;
+        }
+
+        s_of_cluster += s_values[0];
+    }
+
+
+    
+    for(int i = 0; i < num_of_vectors; i++){
+        /* Get current vector from cluster */
+        vector_item<T>* curr_vector = vectors[i];
+
+        /* Calculate the distance with the remaining vectors */
+        for(int j = i + 1; j < num_of_vectors - 1; j++){
+
+            vector_item<T>* next_vector = vectors[j];
+
+            /* Calculate distance and add to distances */
+            double distance = dist(*curr_vector, *next_vector);
+            s_values[i] += distance;
+            s_values[j] += distance;  
+
+        }
+
+        s_values[i] /= double(num_of_vectors);
+
+        int sec_best = get_second_best(*curr_vector, cluster_num, clusters, dist);
+        double b_value = calculate_b(*curr_vector, clusters[sec_best], dist);
+    
+        if(s_values[i] >= b_value){
+            s_values[i] = (b_value - s_values[i]) / s_values[i];
+        }
+        else{
+            s_values[i] = (b_value - s_values[i]) / b_value;
+        }
+
+        s_of_cluster += s_values[i];
+    }
+
+    s_of_cluster /= (double)num_of_vectors;
+
+    cout << "s(" << cluster_num << ") = " << s_of_cluster << endl;
+}
+
 
 /* Returns number(id) of cluster */
 template <class T>
@@ -95,6 +198,17 @@ int cluster<T>::get_centroid_type(){
 template <class T>
 vector_item<T>* cluster<T>::get_centroid(){
     return this->centroid;
+}
+
+/* Returns pointer to vector in given index of vector */
+template <class T>
+vector_item<T>* cluster<T>::get_vector(int index){
+    return vectors[index ];
+}
+
+template <class T>
+vector<vector_item<T>*>& cluster<T>::get_vectors(){
+    return vectors;
 }
 
 /* Returns number of vectors in cluster */
@@ -128,7 +242,7 @@ void cluster<T>::print(){
 // CL_MANAGEMENT //
 ///////////////////
 template <class T>
-cl_management<T>::cl_management(int metric, int k, int init_alg){
+cl_management<T>::cl_management(int metric, int k, int init_alg, int assign_alg, int update_alg){
     all_vectors = NULL;
     init_algorithm = NULL;
 
@@ -143,10 +257,21 @@ cl_management<T>::cl_management(int metric, int k, int init_alg){
     else if(init_alg == 2)
         init_algorithm = new cl_init_kmeans<T>;
 
+    if(assign_alg == 1){
+        assign_algorithm = new cl_assign_lloyd<T>;
+    }
+
+    if(update_alg == 1){
+        update_algorithm = new cl_update_kmeans<T>;
+    }
+    else if(update_alg == 2){
+        update_algorithm = new cl_update_pam<T>;
+    }
+
     if(metric == 1)
-        dist_function = &eucl_distance<double>;
+        dist_function = &eucl_distance<T>;
     else if(metric == 2)
-        dist_function = &cs_distance<double>;
+        dist_function = &cs_distance<T>;
 }
 
 template <class T>
@@ -181,6 +306,18 @@ void cl_management<T>::init_clusters(){
 }
 
 template <class T>
+void cl_management<T>::assign_clusters(){
+    this->assign_algorithm->assign_clusters(*this);
+}
+
+template <class T>
+void cl_management<T>::update_clusters(){
+    this->update_algorithm->update_clusters(*this);
+}
+
+
+
+template <class T>
 dataset<T>* cl_management<T>::get_dataset(){
     return this->all_vectors;
 }
@@ -212,4 +349,12 @@ void cl_management<T>::print(){
 template <class T>
 dist_func cl_management<T>::get_dist_func(){
     return this->dist_function;
+}
+
+template <class T>
+void cl_management<T>::evaluation(){
+    for(int i = 0; i < k; i++){
+        cluster<T>* curr_cluster = clusters[i];
+        curr_cluster->evaluation(clusters, dist_function);
+    }
 }

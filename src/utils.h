@@ -14,6 +14,7 @@
 #include <unordered_set>
 
 #include "dataset.h"
+#include "clusters.h"
 
 /*  Header file for all variant functions and structs used
  *  to complete the LSH algorithm.
@@ -65,6 +66,16 @@ double eucl_distance(vector_item<T>&, vector_item<T>&);
 /* Computes the cosine distance of 2 vectors */
 template <class T>
 double cs_distance(vector_item<T>&, vector_item<T>&);
+
+/* Given a specific vector and it's cluster, finds and returns the second best */
+/* cluster for it using the distance function(metric) provided                 */
+template <class T>
+int get_second_best(vector_item<T>&, int, std::vector<cluster<T>*>&, dist_func&);
+
+/* Given a specific vector and a cluster, calculates and returns the average */
+/* distance from all the vectors in the cluster, using the metric provided   */
+template <class T>
+double calculate_b(vector_item<T>&, cluster<T>*, dist_func&);
 
 /* Asks user if he wants to continue to a new execution and if he wants */
 /* to use different files, returning the corresponding choice */

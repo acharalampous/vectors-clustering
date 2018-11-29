@@ -17,7 +17,10 @@ using namespace std;
 
 template double eucl_distance(vector_item<double>&, vector_item<double>&);
 template double cs_distance(vector_item<double>&, vector_item<double>&);
+template int get_second_best(vector_item<double>&, int, vector<cluster<double>*>&, dist_func&);
+template double calculate_b(vector_item<double>&, cluster<double>*, dist_func&);
 template float exchausting_s(dataset<int>&, vector_item<int>&, int);
+
 
 
 /*  All functions implementions that are defined in utils.h */
@@ -412,6 +415,48 @@ double cs_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 	dist = 1 - dist;
 
 	return dist;
+}
+
+template <class T>
+int get_second_best(vector_item<T>& query, int cl_num, vector<cluster<T>*>& clusters, dist_func& dist){
+    int sec_best = cl_num;
+    double min_distance;
+    int k = clusters.size();
+    int flag = 0; // min_distance was initialized
+
+    for(int i = 0; i < k; i++){
+        if(i == cl_num)
+            continue;
+        
+        double curr_dist = dist(query, *(clusters[i]->get_centroid()));
+        if(flag == 0){
+            sec_best = i;
+            min_distance = curr_dist;
+            flag = 1;
+        }
+        else{
+            if(curr_dist <= min_distance){
+                sec_best = i;
+                min_distance = curr_dist;
+            }
+        }
+    }
+}
+
+template <class T>
+double calculate_b(vector_item<T>& query, cluster<T>* cl, dist_func& dist){
+    int num_of_vectors = cl->get_size() + 1;
+    double b_value = 0.0;
+    if(cl->get_centroid_type() == 1){
+        num_of_vectors++;
+
+        b_value += dist(query, *(cl->get_centroid()));
+    }
+
+    for(int i = 0; i < num_of_vectors; i++)
+        b_value += dist(query, *(cl->get_vector(i)));
+
+    return b_value /= double(num_of_vectors);
 }
 
 

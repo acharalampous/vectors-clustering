@@ -26,6 +26,7 @@ class vector_item{
     public:
         /* Given the points of vector,id and index, create a new vector_item */
         vector_item(std::string&, int);
+        vector_item();
 
         /* Accessors */
         std::string& get_id(); // returns id as string

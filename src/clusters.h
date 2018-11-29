@@ -14,6 +14,9 @@
 #include "cl_algorithms.h"
 
 template <class T> class cl_init_algorithm;
+template <class T> class cl_assign_algorithm;
+template <class T> class cl_update_algorithm;
+
 
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
 
@@ -29,6 +32,7 @@ class cluster_info{
         int is_centroid; // 1 if vector is the centroid of the cluster that it belongs to, else 0
         int cluster_num; // number of cluster that vector belongs to
         int index; // index of vector in dataset(that is mapped to this info)
+        double distance; // distance from centroid, -1 if not assigned
     public:
         /* Con-De Structor */
 
@@ -39,12 +43,14 @@ class cluster_info{
         int get_is_centroid(); 
         int get_cluster_num();
         int get_index();
+        double get_distance();
 
         /* Mutators */
         void set_centroid(); // sets is_centroid as 1
         void set_cluster(int); // sets cluster_num to the given int 
         void set_index(int); // sets index to the given int
-        void reset_info(); // sets cluster_num as -1
+        void set_distance(double); // set distance from centroid to given double
+        void reset_info(); // sets is_centroid as 0 and cluster_num as -1
 };
 
 
@@ -65,10 +71,15 @@ class cluster{
         /* Given the number of cluster, create a new empty cluster */
         cluster(int);
 
+        void add_vector(vector_item<T>*);
+        void evaluation(std::vector<cluster<T>*>&, dist_func&);
+    
         /* Accessors */
         int get_cluster_num();
         int get_centroid_type();
         vector_item<T>* get_centroid(); 
+        vector_item<T>* get_vector(int);
+        std::vector<vector_item<T>*>& get_vectors();        
         int get_size();
 
         /* Mutators */
@@ -88,6 +99,8 @@ class cl_management{
         std::vector<cluster_info*> vectors_info; // cluster info for each vector
         std::vector<cluster<T>*> clusters; // all clusters
         cl_init_algorithm<T>* init_algorithm; // algorithm for initiliazing clusters
+        cl_assign_algorithm<T>* assign_algorithm; // algorithm for assigning vector to clusters
+        cl_update_algorithm<T>* update_algorithm; // algorithm for updating centroids in clusters
         dist_func dist_function; // pointer to distance function, eucliean or cosine
 
         int metric; // metric to be used, 1: euclidean, 2: cosine
@@ -97,11 +110,15 @@ class cl_management{
         /* Con-De Structor */
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
-        cl_management(int, int, int);
+        cl_management(int, int, int, int, int);
 
         /* Given a file stream, get all vectors and assign in dataset */
         void fill_dataset(std::ifstream&);
         void init_clusters();
+        void assign_clusters();
+        void update_clusters();
+        void evaluation();
+        void cluster_eval();
 
         /*Accessors */
         dataset<T>* get_dataset();

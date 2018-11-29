@@ -80,6 +80,14 @@ vector_item<T>::vector_item(string& new_vector, int index){
     } 
 }
 
+template <class T>
+vector_item<T>::vector_item(){
+    index = -1; // vector is not place in dataset
+    item_id.clear();
+    for(int i = 0; i < D; i++)
+        coordinates[i] = 0;
+}
+
 /* Returns item name */
 template <class T>
 string& vector_item<T>::get_id(){
