@@ -20,14 +20,15 @@
 template <class T>
 class vector_item{
     private:
-        int index; // index of vector_item in containter
+        int index; // index of vector_item in dataset(container)
         std::string item_id; // name of vector
         std::array<T, D> coordinates; // points of vector
     public:
         /* Given the points of vector,id and index, create a new vector_item */
         vector_item(std::string&, int);
-        vector_item();
+        vector_item(); // Create an empty vector_item, not placed in dataset
 
+        /* If given vector equals to object returns 1, else 0 */
         int is_equal(vector_item<T>&);
 
         /* Accessors */

@@ -62,7 +62,7 @@ class cluster{
         int cluster_num; // number of cluster
         int centroid_type; // 1: if centroid in dataset, 0: not in dataset, -1 no centroid
         vector_item<T>* centroid; // pointer to vector in dataset that is centroid
-        std::vector<vector_item<T>*> vectors; // holds pointer to all vectors that are in cluster
+        std::vector<vector_item<T>*> vectors; // holds pointers to all vectors that are in cluster
 
 
     public:
@@ -70,8 +70,11 @@ class cluster{
 
         /* Given the number of cluster, create a new empty cluster */
         cluster(int);
+        ~cluster();
 
-        void add_vector(vector_item<T>*);
+        void add_vector(vector_item<T>*); // adds a new non-centoid vector in cluster
+    
+        /* Calculates and prints the cluster's average silhouette and finally returns the total */
         double evaluation(std::vector<cluster<T>*>&, dist_func&);
     
         /* Accessors */
@@ -83,10 +86,8 @@ class cluster{
         int get_size();
 
         /* Mutators */
-        void set_centroid(vector_item<T>*); // sets is_centroid as 1
+        void set_centroid(vector_item<T>*); // sets given vector as centroid
         void set_centroid_type(int); // sets centroid type 
-        // void set_index(int); // sets index to the given int
-        // void reset_info(); // sets cluster_num as -1
         
         void print();
 };
@@ -111,20 +112,24 @@ class cl_management{
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
         cl_management(int, int, int, int, int);
+        ~cl_management();
 
         /* Given a file stream, get all vectors and assign in dataset */
         void fill_dataset(std::ifstream&);
-        void init_clusters();
-        void assign_clusters();
-        int update_clusters();
-        void evaluation();
-        void cluster_eval();
+        
+        /* Clustering algorithms */
+        void init_clusters(); // init clusters using the algorithm provided
+        void assign_clusters(); // assign vectors to clusters using the assignment algorithm
+        int update_clusters(); // update centroids using the algorithm provided
+        
+        /* Calculate and print silhouette of clusters and vectors */
+        void silhouette();
 
         /*Accessors */
         dataset<T>* get_dataset();
         std::vector<cluster_info*>& get_vectors_info();
         std::vector<cluster<T>*>& get_clusters();
-        int get_k(); // returns number of k
+        int get_k();
         dist_func get_dist_func();
 
         void print();

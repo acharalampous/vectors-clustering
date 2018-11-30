@@ -17,9 +17,9 @@
 using namespace std;
 
 template class vector_item<int>;
-template class dataset<int>;
-
 template class vector_item<double>;
+
+template class dataset<int>;
 template class dataset<double>;
 
 
@@ -80,22 +80,27 @@ vector_item<T>::vector_item(string& new_vector, int index){
     } 
 }
 
+/* Create empty vector_item */
 template <class T>
 vector_item<T>::vector_item(){
-    index = -1; // vector is not place in dataset
+    index = -1; // vector is not placed in dataset
     item_id.clear();
+
+    /* Initialize points in all dimensions*/
     for(int i = 0; i < D; i++)
         coordinates[i] = 0;
 }
 
+/* Returns 1 if same, else 0 */
 template <class T>
 int vector_item<T>::is_equal(vector_item<T>& vec){
+    /* Check all dimensions */
     for(int i = 0; i < D; i++){
-        if(this->coordinates[i] != vec.coordinates[i])
-            return 0;
+        if(this->coordinates[i] != vec.coordinates[i]) // Different dimension
+            return 0; // Not equal vectors
     }
 
-    return 1; // Same vectors
+    return 1; // Equal vectors
 }
 
 
@@ -151,6 +156,7 @@ dataset<T>::~dataset(){
 /* Push new vector in dataset, increase counter */
 template <class T>
 void dataset<T>::add_vector(string& new_vector){
+    
     /* Push new vector */
     vectors.push_back(new vector_item<T>(new_vector, counter));
     

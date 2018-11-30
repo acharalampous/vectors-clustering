@@ -419,24 +419,25 @@ double cs_distance(vector_item<T>& vec1, vector_item<T>& vec2){
 
 template <class T>
 int get_second_best(vector_item<T>& query, int cl_num, vector<cluster<T>*>& clusters, dist_func& dist){
-    int sec_best = cl_num;
-    double min_distance;
+    int sec_best = cl_num; // index of the second best cluster for query to be placed
+    double min_distance; // distance to second best
     int k = clusters.size();
 
     int flag = 0; // min_distance was initialized
 
+    /* Check for all clusters */
     for(int i = 0; i < k; i++){
-        if(i == cl_num) // if same cluster, dont calculate
+        if(i == cl_num) // if same cluster, skip
             continue;
         
         double curr_dist = dist(query, *(clusters[i]->get_centroid()));
-        if(flag == 0){ // must initialize flag
+        if(flag == 0){ // no minimum distance yet, so keep current distance
             sec_best = i;
             min_distance = curr_dist;
             flag = 1;
         }
         else{
-            if(curr_dist <= min_distance){
+            if(curr_dist <= min_distance){ // keep if less
                 sec_best = i;
                 min_distance = curr_dist;
             }
@@ -461,7 +462,13 @@ double calculate_b(vector_item<T>& query, cluster<T>* cl, dist_func& dist){
         b_value += dist(query, *(cl->get_centroid()));
     }
 
-    return b_value /= double(num_of_vectors);
+    if(num_of_vectors == 0)
+        return 0.0;
+
+    /* Get average distance and return */
+    b_value = b_value / (double)num_of_vectors;
+    
+    return b_value;
 }
 
 

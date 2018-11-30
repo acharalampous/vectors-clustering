@@ -14,19 +14,21 @@
 template<class T> class cl_management;
 template<class T> class cluster;
 
+
+/* Pointer to metric function */
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
 
 /* Implementation of all algorithms that will be used in clustering */
 
+
 /* Initializing algorithms */
-
-
 /* Abstract type of initializing algorithm */
 template <class T>
 class cl_init_algorithm{
     protected:
         
     public:
+        virtual ~cl_init_algorithm(){}
         /* All init algorithms must have this method */
         virtual void init_clusters(cl_management<T>&) = 0;
 };
@@ -67,6 +69,8 @@ class cl_assign_algorithm{
     protected:
 
     public:
+        virtual ~cl_assign_algorithm(){}
+
         virtual void assign_clusters(cl_management<T>&) = 0;
 
 };
@@ -86,6 +90,8 @@ class cl_update_algorithm{
     protected:
 
     public:
+        virtual ~cl_update_algorithm(){}
+
         virtual int update_clusters(cl_management<T>&) = 0;
 };
 

@@ -78,6 +78,7 @@ void cluster_info::set_distance(double new_dist){
 void cluster_info::reset_info(){
     this->is_centroid = 0;
     this->cluster_num = -1;
+    this->distance = -1.0;
 }
 
 
@@ -93,20 +94,32 @@ cluster<T>::cluster(int cluster_num){
 }
 
 template <class T>
+cluster<T>::~cluster(){
+    /* If centroid not in dataset, destroy it from here */
+    if(centroid_type == 0)
+        delete centroid;
+    
+    vectors.clear();
+}
+
+/* Add new vector to cluster(non-centroid) */
+template <class T>
 void cluster<T>::add_vector(vector_item<T>* new_vector){
     this->vectors.push_back(new_vector);
-
 }
 
 
 template <class T>
 double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
-    /* Get number of vectors in cluster */
-    int num_of_vectors = vectors.size();
+    int num_of_vectors = vectors.size(); // Get number of vectors in cluster
     int ct = -1; // centroid_type -> 1: if there is centroid from dataset, else 0
     double* s_values;
     double s_of_cluster = 0.0; // Average s(i) of cluster
 
+    if(num_of_vectors == 0){
+        cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+        return 0.0;
+    }
     /* Must not perform silhouette for centroid if it is not in dataset */
     if(this->get_centroid_type() == 0){
         ct = 0;
@@ -116,7 +129,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
         for(int i = 0; i < num_of_vectors; i++)
             s_values[i] = 0.0;
     }
-    else{
+    else{ // centroid is in dataset, so calculate its silhouette
         ct = 1;
         vector_item<T>* old_centroid = centroid;
         s_values = new double[num_of_vectors + 1];
@@ -130,22 +143,32 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
             /* Calculate distance and add to distances */
             double distance = dist(*old_centroid, *curr_vector);
             s_values[0] += distance;
-            s_values[i + 1] = distance;
+            s_values[i + 1] = distance; // initialize and keep distance of i for later
         }
 
+        if(num_of_vectors == 0){
+            delete [] s_values;
+            cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+            return 0.0;
+        }
         /* Calculate average a(i) */
-        s_values[0] /= num_of_vectors; // except itself
+        s_values[0] = s_values[0] / (double)num_of_vectors; // except itself
 
         /* Find nearest (or 2nd nearest) cluster */
-        int sec_best = get_second_best(*old_centroid, cluster_num, clusters, dist);
+        int sec_best = get_second_best(*old_centroid, this->cluster_num, clusters, dist);
         double b_value = calculate_b(*old_centroid, clusters[sec_best], dist);
     
-        /* Check for max{b(i), a(i)} */
-        if(s_values[0] >= b_value){
+        /* Check for max{a(i), b(i)} */
+        if(s_values[0] >= b_value && s_values[0] != 0.0){
             s_values[0] = (b_value - s_values[0]) / s_values[0];
         }
-        else{
+        else if(b_value != 0.0){
             s_values[0] = (b_value - s_values[0]) / b_value;
+        }
+        else{
+            delete [] s_values;
+            cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+            return 0.0;
         }
 
         s_of_cluster += s_values[0]; // increase total s(i) of cluster
@@ -153,6 +176,8 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
 
 
     for(int i = 0; i < num_of_vectors; i++){
+        int ind = i + ct; // index on s_values
+
         /* Get current vector from cluster */
         vector_item<T>* curr_vector = vectors[i];
 
@@ -163,29 +188,38 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
 
             /* Calculate distance and add to distances */
             double distance = dist(*curr_vector, *next_vector);
-            s_values[i + ct] += distance;
+            s_values[ind] += distance;
             s_values[j + ct] += distance;  
 
         }
 
-        s_values[i + ct] /= double(num_of_vectors + ct - 1); // except itself
+        /* There are no other vectors in cluster */
+        if((num_of_vectors + ct - 1) == 0){
+            break;
+        }
 
-        int sec_best = get_second_best(*curr_vector, cluster_num, clusters, dist);
+        s_values[ind] /= double(num_of_vectors + ct - 1); // except itself
+
+        int sec_best = get_second_best(*curr_vector, this->cluster_num, clusters, dist);
         double b_value = calculate_b(*curr_vector, clusters[sec_best], dist);
     
-        if(s_values[i + ct] >= b_value){
-            s_values[i + ct] = (b_value - s_values[i + ct]) / s_values[i + ct];
+        if(s_values[ind] >= b_value && s_values[ind] != 0.0){
+            s_values[ind] = (b_value - s_values[ind]) / s_values[ind];
+        }
+        else if(b_value != 0.0){
+            s_values[ind] = (b_value - s_values[ind]) / b_value;
         }
         else{
-            s_values[i + ct] = (b_value - s_values[i + ct]) / b_value;
+            s_values[ind] = 0.0;
         }
 
-        s_of_cluster += s_values[i + ct];
+        s_of_cluster += s_values[ind];
     }
 
     double s_total = s_of_cluster;
-    s_of_cluster /= (double)num_of_vectors + ct;
+    s_of_cluster /= (double)(num_of_vectors + ct);
 
+    /*** Output ***/
     cout << "s(" << cluster_num << ") = " << s_of_cluster << endl;
 
     return s_total;
@@ -213,9 +247,10 @@ vector_item<T>* cluster<T>::get_centroid(){
 /* Returns pointer to vector in given index of vector */
 template <class T>
 vector_item<T>* cluster<T>::get_vector(int index){
-    return vectors[index ];
+    return vectors[index];
 }
 
+/* Returns all vectors' container */
 template <class T>
 vector<vector_item<T>*>& cluster<T>::get_vectors(){
     return vectors;
@@ -227,11 +262,13 @@ int cluster<T>::get_size(){
     return this->vectors.size();
 }
 
+/* Sets new centroid */
 template <class T>
 void cluster<T>::set_centroid(vector_item<T>* new_centroid){
     this->centroid = new_centroid;
 }
 
+/* Set centroid type */
 template <class T>
 void cluster<T>::set_centroid_type(int type){
     this->centroid_type = type;
@@ -254,34 +291,61 @@ void cluster<T>::print(){
 template <class T>
 cl_management<T>::cl_management(int metric, int k, int init_alg, int assign_alg, int update_alg){
     all_vectors = NULL;
-    init_algorithm = NULL;
 
     this->metric = metric;
     this->k = k;
 
+    /* Create empty clusters */
     for(int i = 0; i < k; i++)
         clusters.push_back(new cluster<T>(i));
 
+    /* Set initiliaze algorithm */
     if(init_alg == 1)
         init_algorithm = new cl_init_random<T>;
     else if(init_alg == 2)
         init_algorithm = new cl_init_kmeans<T>;
 
+    /* Set assign algorithm */
     if(assign_alg == 1){
         assign_algorithm = new cl_assign_lloyd<T>;
     }
 
-    if(update_alg == 1){
+    /* Set update algorithm */
+    if(update_alg == 1)
         update_algorithm = new cl_update_kmeans<T>;
-    }
-    else if(update_alg == 2){
+    else if(update_alg == 2)
         update_algorithm = new cl_update_pam<T>;
-    }
 
+    /* Set metric for distance */
     if(metric == 1)
         dist_function = &eucl_distance<T>;
     else if(metric == 2)
         dist_function = &cs_distance<T>;
+}
+
+template <class T>
+cl_management<T>::~cl_management(){
+    /* Destroy dataset */
+    if(all_vectors != NULL)
+        delete this->all_vectors;
+
+    /* Destroy cluster_info for each vector */
+    for(unsigned int i = 0; i < vectors_info.size(); i++)
+        delete vectors_info[i];
+    vectors_info.clear();
+
+    /* Destroy clusters */
+    for(unsigned int i = 0; i < clusters.size(); i++)
+        delete clusters[i];
+    clusters.clear();
+
+    /* Destroy algorithms */
+    if(init_algorithm != NULL)
+        delete this->init_algorithm;
+    if(assign_algorithm != NULL)
+        delete this->assign_algorithm;
+    if(update_algorithm != NULL)
+        delete this->update_algorithm;
 }
 
 template <class T>
@@ -310,38 +374,63 @@ void cl_management<T>::fill_dataset(ifstream& input){
     }
 }
 
+/* Initialize clusters' centroids */
 template <class T>
 void cl_management<T>::init_clusters(){
     this->init_algorithm->init_clusters(*this);
 }
 
+/* Assign vectors to existing clusters */
 template <class T>
 void cl_management<T>::assign_clusters(){
     this->assign_algorithm->assign_clusters(*this);
 }
 
+/* Update centroids of clusters */
 template <class T>
 int cl_management<T>::update_clusters(){
     return this->update_algorithm->update_clusters(*this);
 }
 
+template <class T>
+void cl_management<T>::silhouette(){
+    double s_total = 0.0; // total silhouette of all vectors */
+    int total_vectors = all_vectors->get_counter();
+
+    cout << "--SILHOUETTES--: " << endl;
+    cout << "---------------" << endl;
+    
+    /* Calculate silhouette of each cluster */
+    for(int i = 0; i < k; i++){
+        cluster<T>* curr_cluster = clusters[i];
+        
+        s_total += curr_cluster->evaluation(clusters, dist_function);
+    }
 
 
+    s_total /= (double)total_vectors;
+
+    /*** Output ***/
+    cout << "**s_total = " << s_total << endl;
+}
+
+/* Returns pointer to dataset */
 template <class T>
 dataset<T>* cl_management<T>::get_dataset(){
     return this->all_vectors;
 }
 
+/* Returns cluster_info of all vectors container */
 template <class T>
 vector<cluster_info*>& cl_management<T>::get_vectors_info(){
     return this->vectors_info;
 }
 
+/* Returns all clusters */
 template <class T>
 vector<cluster<T>*>& cl_management<T>::get_clusters(){
     return this->clusters;
 }
-
 
 /* Returns number of k(total clusters) */
 template <class T>
@@ -349,29 +438,14 @@ int cl_management<T>::get_k(){
     return this->k;
 }
 
-
-template <class T>
-void cl_management<T>::print(){
-    for(unsigned int i = 0; i < clusters.size(); i++)
-        clusters[i]->print();
-}
-
+/* Returns the distance function(metric) used */
 template <class T>
 dist_func cl_management<T>::get_dist_func(){
     return this->dist_function;
 }
 
 template <class T>
-void cl_management<T>::evaluation(){
-    double s_total = 0.0;
-    int total_vectors = all_vectors->get_counter();
-    cout << "SILHOUETTES: " << endl;
-    cout << "-------------" << endl;
-    for(int i = 0; i < k; i++){
-        cluster<T>* curr_cluster = clusters[i];
-        s_total = curr_cluster->evaluation(clusters, dist_function);
-        s_total /= double(total_vectors);
-    }
-
-    cout << "**s_total = " << s_total << endl;
+void cl_management<T>::print(){
+    for(unsigned int i = 0; i < clusters.size(); i++)
+        clusters[i]->print();
 }

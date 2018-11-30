@@ -67,8 +67,8 @@ double eucl_distance(vector_item<T>&, vector_item<T>&);
 template <class T>
 double cs_distance(vector_item<T>&, vector_item<T>&);
 
-/* Given a specific vector and it's cluster, finds and returns the second best */
-/* cluster for it using the distance function(metric) provided                 */
+/* Given a specific vector and it's cluster, finds and returns the index of    */
+/* the second best cluster for it using the distance function(metric) provided */
 template <class T>
 int get_second_best(vector_item<T>&, int, std::vector<cluster<T>*>&, dist_func&);
 

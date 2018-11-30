@@ -22,6 +22,9 @@ template class cl_update_kmeans<double>;
 template class cl_update_pam<double>;
 
 
+/*  Implementation of all functions of clustering algorithms
+ *  Definitions found in cl_algorithms.h.
+ */
 
 
 
@@ -45,17 +48,19 @@ void cl_init_random<T>::init_clusters(cl_management<T>& cl_manage){
     uniform_int_distribution<int> rand_Z(0, num_of_vectors - 1);
 
     for(int i = 0; i < k; i++){
-        int sel = rand_Z(gen); // select random vector
+        int sel = rand_Z(gen); // select random vector from dataset
         
-        if(vectors_info[sel]->get_is_centroid() == 1){ // vector already a centroid, so take choose another random
+        if(vectors_info[sel]->get_is_centroid() == 1){ // vector already a centroid, so choose another random
             i--;
             continue;
         }
     
         /* Set point as centroid */
+        /* Update cluster info */
         clusters[i]->set_centroid(all_vectors->get_item(sel));
         clusters[i]->set_centroid_type(1);
         
+        /* Update vector info */
         vectors_info[sel]->set_centroid();
         vectors_info[sel]->set_cluster(i);
     }
@@ -97,7 +102,7 @@ void cl_init_kmeans<T>::init_clusters(cl_management<T>& cl_manage){
     for(int i = 0; i < num_of_vectors; i++) // Initialize array
         min_distances.push_back(0.0);
     
-    T total_distance = 0.0; // distance of the furthest vector
+    double total_distance = 0.0; // distance of the furthest vector
 
     vector<dist_mapping> probs_array; // array that holds probabilities
 
@@ -280,9 +285,6 @@ int cl_update_kmeans<T>::update_clusters(cl_management<T>& cl_manage){
 
     vector<cluster_info*>& vectors_info = cl_manage.get_vectors_info();
     vector<cluster<T>*>& clusters = cl_manage.get_clusters();
-    
-    dist_func dist_function;
-    dist_function = cl_manage.get_dist_func();
 
     int k = cl_manage.get_k(); // get number of total clusters
 
@@ -370,7 +372,7 @@ vector_item<T>* cl_update_kmeans<T>::get_new_centroid(cluster<T>& cl){
 ///////////////////
 template <class T>
 int cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
-    int made_changes = 0; // 1: at least one centroid changes, 2: no changes
+    int made_changes = 0; // 1: at least one centroid changed, 0: no changes
     
     vector<cluster_info*>& vectors_info = cl_manage.get_vectors_info();
     vector<cluster<T>*>& clusters = cl_manage.get_clusters();
@@ -391,7 +393,7 @@ int cl_update_pam<T>::update_clusters(cl_management<T>& cl_manage){
         /* If not differences found yet, check for different centroid */
         if(made_changes == 0){
             int equal = new_centroid->is_equal(*old_centroid);
-            made_changes = (equal == 1) ? 0 : 1;
+            made_changes = (equal != 1) ? 1 : 0;
         }
 
         /* Get index of old centroid to reset it(stop it from being centroid) */
@@ -431,7 +433,7 @@ vector_item<T>* cl_update_pam<T>::get_new_centroid(cluster<T>& cl, dist_func& di
     /* Array that will hold the distances of each vector with the rest vectors. */
     /* At index 0 is the distance for the current centroid                      */
     double* distances = new double[num_of_vectors];
-    distances[0] = 0.0; // initialize
+    distances[0] = 0.0; // initialize distance of centroid
     
     /* Get old centroid and calculate distance with all vectors */
     vector_item<T>* old_centroid = cl.get_centroid();
@@ -442,7 +444,7 @@ vector_item<T>* cl_update_pam<T>::get_new_centroid(cluster<T>& cl, dist_func& di
         /* Calculate distance and add to distances */
         double distance = dist(*old_centroid, *curr_vector);
         distances[0] += distance;
-        distances[j + 1] = distance; // initiliaze distance fo current vector(no need to recalculate)
+        distances[j + 1] = distance; // initiliaze distance for current vector(no need to recalculate)
 
     }
 
@@ -472,17 +474,16 @@ vector_item<T>* cl_update_pam<T>::get_new_centroid(cluster<T>& cl, dist_func& di
 
     /* Find vector with smallest distance */
     double min_distance = distances[0];
-    int new_centroid = 0;
-    for(int j = 0; j < num_of_vectors - 1; j++){
-        if(distances[j + 1] <= min_distance){
-            min_distance = distances[j + 1];
-            new_centroid = j;
+    int new_centroid = -1;
+    for(int j = 1; j < num_of_vectors; j++){
+        if(distances[j] <= min_distance){
+            min_distance = distances[j];
+            new_centroid = j - 1;
         }     
     }
 
     delete [] distances;
-
-    if(new_centroid == 0)
+    if(new_centroid == -1)
         return cl.get_centroid();
     else
         return cl.get_vector(new_centroid);
