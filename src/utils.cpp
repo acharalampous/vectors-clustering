@@ -24,7 +24,6 @@ template double calculate_b(vector_item<double>&, cluster<double>*, dist_func&);
 template float exchausting_s(dataset<int>&, vector_item<int>&, int);
 
 
-
 /*  All functions implementions that are defined in utils.h */
 
 int get_parameters(int argc, char** argv, string& input_file, string& queryset_file, string& output_file, int& k, int& L){
@@ -504,6 +503,43 @@ double get_starting_r(vector<cluster<double>*>& clusters, dist_func& dist){
 
 
     return min_distance / 2.0;
+}
+
+int add_to_clusters(cluster<double>* cl, double& r, vector<vector_check*>& vectors_to_check, vector<cluster_info*>& vectors_info, int& vectors_left){
+	int cluster_num = cl->get_cluster_num();
+	int changes = 0;
+
+	int num_of_vectors = vectors_to_check.size();
+
+	/* Check all vectors that were collected before */
+	for(int i = 0; i < num_of_vectors; i++){
+		vector_item<double>& item = *(vectors_to_check[i]->item);
+
+		/* Check if item was not checked already */
+		double dist = vectors_to_check[i]->distance;
+		if(dist <= r){
+			int item_index = item.get_index();
+
+			/* Vector is in radius, must check if its already assigned */
+			if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
+				vectors_info[item_index]->set_cluster(cluster_num);
+				vectors_info[item_index]->set_distance(dist);
+				vectors_left--;
+				changes++; // changes were made
+			}
+			else if(dist <= vectors_info[item_index]->get_distance()){ // vector is assigned, check if less distance
+					vectors_info[item_index]->set_cluster(cluster_num);
+					vectors_info[item_index]->set_distance(dist);
+			}
+
+			delete vectors_to_check[i];
+			
+			num_of_vectors--;
+			i--;
+			vectors_to_check.erase(vectors_to_check.begin() + i + 1); 	
+		}
+	}
+	return changes;
 }
 
 void final_assign(cl_management<double>& cl_manage){

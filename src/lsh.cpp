@@ -98,8 +98,9 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
             r = r * 2;
             
             for(int i = 0; i < num_of_centroids; i++){
-                flag += eu_tables[0]->assign_clusters(clusters[i], r, *(vectors_to_check[i]), vectors_info, vectors_left);
+                flag += add_to_clusters(clusters[i], r, *(vectors_to_check[i]), vectors_info, vectors_left);
             }
+
             /* Check if changes were made */
             if(flag == 0 || vectors_left == 0)
                 break;
@@ -108,7 +109,25 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
         final_assign(cl_manage);
     }
     else if(cs_tables.size() != 0){
-        
+        for(int i = 0; i < num_of_centroids; i++){
+            for(unsigned int j = 0; j < eu_tables.size(); j++){
+                cs_tables[j]->first_assign(clusters[i], r, *(checked_set[i]), *(vectors_to_check[i]), vectors_info, vectors_left);
+            }
+        }
+
+        while(1){
+            int flag = 0;
+            r = r * 2;
+            
+            for(int i = 0; i < num_of_centroids; i++){
+                flag += add_to_clusters(clusters[i], r, *(vectors_to_check[i]), vectors_info, vectors_left);
+            }
+
+            /* Check if changes were made */
+            if(flag == 0 || vectors_left == 0)
+                break;
+        }
+        final_assign(cl_manage);
     }
 }
 

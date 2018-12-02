@@ -13,8 +13,8 @@ int main(void){
     int i = 0;
     ifstream input("twitter_dataset_small_v2.csv");
 
-    int metric = 1;
-    int k = 50;
+    int metric = 2;
+    int k = 2;
     int L = 4;
     int hf = 5;
     int init = 1;

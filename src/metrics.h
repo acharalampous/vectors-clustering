@@ -113,7 +113,7 @@ class euclidean{
 
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
-        int assign_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
+        //int assign_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
         /* Given a query vector, finds the nearest neighbours(for LSH) */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);
 
@@ -166,6 +166,8 @@ class csimilarity{
 
         /* Returns a pointer to the bucket with the given index */
         std::vector<vector_item<T>*>& get_bucket(int);
+
+        int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
         /* Given a query vector, finds the nearest neighbours */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);

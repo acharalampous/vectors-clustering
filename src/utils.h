@@ -24,6 +24,7 @@ template <class T> class cl_management;
  */
 
 template <class T> class cluster;
+class cluster_info;
 
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
 
@@ -97,6 +98,8 @@ double calculate_b(vector_item<T>&, cluster<T>*, dist_func&);
 /* search in lsh/hc. The radius equals the minimum distance between all centrods */
 /* dived by 2 (R = min_dist / 2)                                                 */
 double get_starting_r(std::vector<cluster<double>*>&, dist_func&);
+
+int add_to_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
 void final_assign(cl_management<double>&);
 /* Asks user if he wants to continue to a new execution and if he wants */
