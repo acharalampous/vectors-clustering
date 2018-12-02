@@ -14,15 +14,17 @@ int main(void){
     ifstream input("twitter_dataset_small_v2.csv");
 
     int metric = 2;
-    int k = 2;
+    int k = 40;
     int L = 4;
     int hf = 5;
+    int hc_probes = 3;
+    int hc_M = 100;
     int init = 1;
-    int assign = 2;
+    int assign = 3;
     int upd = 1;
 
 
-    cl_management<double> cl_manage(metric, k, L, hf, init, assign, upd);
+    cl_management<double> cl_manage(metric, k, L, hf, hc_probes, hc_M, init, assign, upd);
     cl_manage.fill_dataset(input);
 
     cl_manage.init_clusters();

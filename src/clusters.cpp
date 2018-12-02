@@ -290,13 +290,15 @@ void cluster<T>::print(){
 // CL_MANAGEMENT //
 ///////////////////
 template <class T>
-cl_management<T>::cl_management(int metric, int k, int L, int hf_num, int init_alg, int assign_alg, int update_alg){
+cl_management<T>::cl_management(int metric, int k, int L, int hf_num, int hc_probes, int hc_M, int init_alg, int assign_alg, int update_alg){
     all_vectors = NULL;
 
     this->metric = metric;
     this->k = k;
     this->L = L;
     this->hf_num = hf_num;
+    this->hc_probes = hc_probes;
+    this->hc_M = hc_M;
 
     /* Create empty clusters */
     for(int i = 0; i < k; i++)
@@ -314,6 +316,10 @@ cl_management<T>::cl_management(int metric, int k, int L, int hf_num, int init_a
     }
     else if(assign_alg == 2){
         assign_algorithm = new cl_assign_lsh<T>;
+    }
+    else if(assign_alg == 3){
+        assign_algorithm = new cl_assign_hc<T>;
+
     }
 
     /* Set update algorithm */
@@ -382,13 +388,18 @@ void cl_management<T>::fill_dataset(ifstream& input){
 
     /* Check if lsh or hypercube in order to insert all vectors in buckets */
     int assign_alg = assign_algorithm->get_alg_id();
-    if(assign_alg == 2 || assign_alg == 3){ // lsh or hc
-    
+    if(assign_alg > 1){ // lsh or hc
         int n = all_vectors->get_counter();
-        this->assign_algorithm->init_lsh(metric, L, hf_num, n);
-        for(int i = 0; i < n; i++){
+
+        /* Initialize lsh */
+        if(assign_alg == 2)
+            this->assign_algorithm->init_lsh(metric, L, hf_num, n);
+        else if(assign_alg == 3)
+            this->assign_algorithm->init_hc(metric, hf_num, hc_probes, hc_M);
+        
+        /* Add to lsh/hc */
+        for(int i = 0; i < n; i++)
             assign_algorithm->add_vector(all_vectors->get_item(i));
-        }
     }
 
 

@@ -289,43 +289,98 @@ int euclidean<T>::first_assign(cluster<double>* cl, double& r, unordered_set<str
 	return vectors_to_check.size();
 }
 
-// template <class T>
-// int euclidean<T>::assign_clusters(cluster<double>* cl, double& r, vector<vector_check*>& vectors_to_check, vector<cluster_info*>& vectors_info, int& vectors_left){
-// 	int cluster_num = cl->get_cluster_num();
-// 	int changes = 0;
+template <class T>
+int euclidean<T>::first_assign(cluster<double>* cl, double& r, hypercube<T>& hc, 
+                               vector<vector_check*>& vectors_to_check, 
+							   vector<cluster_info*>& vectors_info, int& vectors_left){   
+    
+	int k = get_k(); // get number of hash functions
+	int cluster_num = cl->get_cluster_num();
+	vector_item<T>* query = cl->get_centroid();
+	int probes = hc.get_probes();
 
-// 	int num_of_vectors = vectors_to_check.size();
+	array<T, D>& vec = query->get_points();
+        
+	/* Find bucket num of query */
+	int bucket_num = 0;
+	for(int i = 0; i < k; i++){
+		/* Get hash function value */
+		int fi = get_val_hf(vec, i);
 
-// 	/* Check all vectors that were collected before */
-// 	for(int i = 0; i < num_of_vectors; i++){
-// 		vector_item<T>& item = *(vectors_to_check[i]->item);
+		/* Get 1 or 0 value from map */
+		fi = hc.check_map(fi, i);
 
-// 		/* Check if item was not checked already */
-// 		double dist = vectors_to_check[i]->distance;
-// 		if(dist <= r){
-// 			int item_index = item.get_index();
+		/* Find bucket */
+		bucket_num += fi * pow(2, k - i - 1);
+	}
 
-// 			/* Vector is in radius, must check if its already assigned */
-// 			if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
-// 				vectors_info[item_index]->set_cluster(cluster_num);
-// 				vectors_info[item_index]->set_distance(dist);
-// 				vectors_left--;
-// 				changes++; // changes were made
-// 			}
-// 			else if(dist <= vectors_info[item_index]->get_distance()){ // vector is assigned, check if less distance
-// 					vectors_info[item_index]->set_cluster(cluster_num);
-// 					vectors_info[item_index]->set_distance(dist);
-// 			}
+	/* Find number of neighbours that need to be checked, according to probes */
+	vector<int>* neighbours = hc.find_neighbours(bucket_num, probes);
 
-// 			delete vectors_to_check[i];
+	int vector_sz = get_k() + 1; // size of vector
+	
+	int remaining_probes = probes; // number of neighbours left to check
+	int remaining_items = hc.get_M(); // number of items left to check
+	int flag = 0; // if flag = 1, reached probes of M
+
+	/* Check neighbours found */
+	for(int i = 0; i < vector_sz; i++){
+		if(flag == 1)
+			break;
+
+		/* Get neighbours */
+		for(unsigned int j = 0; j < neighbours[i].size(); j++){
 			
-// 			num_of_vectors--;
-// 			i--;
-// 			vectors_to_check.erase(vectors_to_check.begin() + i + 1); 	
-// 		}
-// 	}
-// 	return changes;
-// }
+			remaining_probes--; // about to check another neighbour
+			if(remaining_probes < 0){ // no more neighbours to check
+				flag = 1;    
+				break;
+			} 
+
+			/* Get bucket from euclidean table */
+			int f = neighbours[i][j];
+			vector<euclidean_vec<T>*>& buck = get_bucket(f);
+
+			for(unsigned int i = 0; i < buck.size(); i++){
+				remaining_items--; // about to check another vector
+				if(remaining_items < 0){ // no more items to check
+					flag = 1;    
+					break;
+				} 
+				
+				euclidean_vec<T>* cur_vec = buck[i]; // get current vector
+				vector_item<T>& item = cur_vec->get_vec();
+
+				double dist = eucl_distance(*query, item);
+
+				int item_index = item.get_index();
+				/* Check if distance is in range */
+				if(dist <= r){
+
+					/* Vector is in radius, must check if its already assigned */
+					if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
+						vectors_info[item_index]->set_cluster(cluster_num);
+						vectors_info[item_index]->set_distance(dist);
+
+						vectors_left--;
+					}
+					else if(dist <= vectors_info[item_index]->get_distance()){ // assigned, check for smaller distance
+							vectors_info[item_index]->set_cluster(cluster_num);
+							vectors_info[item_index]->set_distance(dist);
+					}
+				}
+
+				/* If not yet assigned, check for distance, so it can be checked later */ 
+				else if(vectors_info[item_index]->get_cluster_num() == -1 || dist <= vectors_info[item_index]->get_distance()){
+					vectors_to_check.push_back(new vector_check(&item, dist));
+				}
+			} // end for all items in buckets
+		} // end for neighbours in current distance
+	}// end for neighbours in probe
+	delete [] neighbours;
+
+	return vectors_to_check.size();
+}
 
 template <class T>
 void euclidean<T>::findANN(vector_item<T>& query, float radius, float& min_dist, string& NN_name, ofstream& output, unordered_set<string>& checked_set){
@@ -595,6 +650,92 @@ int csimilarity<T>::first_assign(cluster<double>* cl, double& r, unordered_set<s
 	return vectors_to_check.size();
 }
 
+template <class T>
+int csimilarity<T>::first_assign(cluster<double>* cl, double& r, hypercube<T>& hc, 
+                               vector<vector_check*>& vectors_to_check, 
+							   vector<cluster_info*>& vectors_info, int& vectors_left){   
+    
+	int k = get_k(); // get number of hash functions
+	int cluster_num = cl->get_cluster_num();
+	vector_item<T>* query = cl->get_centroid();
+	int probes = hc.get_probes();
+	int f = 0;
+
+	array<T, D>& vec = query->get_points();
+        
+	/* Get all hash functions values */
+	for(int i = 0; i < k; i++){
+		int temp = this->get_val_hf(vec, i);
+		f += temp * pow(2, k - i - 1); // compute binary value
+	}
+
+	/* Find number of neighbours that need to be checked, according to probes */
+	vector<int>* neighbours = hc.find_neighbours(f, probes);
+
+	int vector_sz = get_k() + 1; // size of vector
+	
+	int remaining_probes = probes; // number of neighbours left to check
+	int remaining_items = hc.get_M(); // number of items left to check
+	int flag = 0; // if flag = 1, reached probes of M
+
+	/* Check neighbours found */
+	for(int i = 0; i < vector_sz; i++){
+		if(flag == 1)
+			break;
+
+		/* Get neighbours */
+		for(unsigned int j = 0; j < neighbours[i].size(); j++){
+			
+			remaining_probes--; // about to check another neighbour
+			if(remaining_probes < 0){ // no more neighbours to check
+				flag = 1;    
+				break;
+			} 
+
+			/* Get bucket from cosine table */
+			int f = neighbours[i][j];
+			vector<vector_item<T>*>& buck = get_bucket(f);
+
+			for(unsigned int k = 0; k < buck.size(); k++){
+				remaining_items--; // about to check another vector
+				if(remaining_items < 0){ // no more items to check
+					flag = 1;    
+					break;
+				} 
+				
+				vector_item<T>* item = buck[k]; // get current vector
+
+				double dist = cs_distance(*query, *item);
+
+				int item_index = item->get_index();
+				
+				/* Check if distance is in range */
+				if(dist <= r){
+
+					/* Vector is in radius, must check if its already assigned */
+					if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
+						vectors_info[item_index]->set_cluster(cluster_num);
+						vectors_info[item_index]->set_distance(dist);
+
+						vectors_left--;
+					}
+					else if(dist <= vectors_info[item_index]->get_distance()){ // assigned, check for smaller distance
+							vectors_info[item_index]->set_cluster(cluster_num);
+							vectors_info[item_index]->set_distance(dist);
+					}
+				}
+
+				/* If not yet assigned, check for distance, so it can be checked later */ 
+				else if(vectors_info[item_index]->get_cluster_num() == -1 || dist <= vectors_info[item_index]->get_distance()){
+					vectors_to_check.push_back(new vector_check(item, dist));
+				}
+			} // end for all items in buckets
+		} // end for neighbours in current distance
+	}// end for neighbours in probe
+	delete [] neighbours;
+
+	return vectors_to_check.size();
+}
 
 template <class T>
 void csimilarity<T>::findANN(vector_item<T>& query, float radius, float& min_dist, string& NN_name, ofstream& output, unordered_set<string>& checked_set){

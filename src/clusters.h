@@ -110,12 +110,14 @@ class cl_management{
         /* In case of lsh or hypercube */
         int L; // number of tables to be created
         int hf_num; // number of hash function to be created
+        int hc_probes; // hc: number of neighbours to be checked
+        int hc_M; // hc: number of items to be checked in total
 
     public:
         /* Con-De Structor */
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
-        cl_management(int, int, int, int, int, int, int);
+        cl_management(int, int, int, int, int, int, int, int, int);
         ~cl_management();
 
         /* Given a file stream, get all vectors and assign in dataset */

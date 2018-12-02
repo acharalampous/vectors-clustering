@@ -15,6 +15,7 @@
 
 #include "utils.h"
 #include "dataset.h"
+#include "hypercube.h"
 
 #define DEFAULT_K 4 // default number of hash functions(LSH)
 #define HC_DEFAULT_K 3 // default number of hash functions(HC)
@@ -31,6 +32,8 @@
 template <class T> class cluster;
 class vector_check;
 class cluster_info;
+template <class T> class hypercube;
+
 
 /*  Implementations of all metrics used in LSH  */
 
@@ -113,7 +116,8 @@ class euclidean{
 
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
-        //int assign_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
+        int first_assign(cluster<double>*, double&, hypercube<T>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
+
         /* Given a query vector, finds the nearest neighbours(for LSH) */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);
 
@@ -168,6 +172,8 @@ class csimilarity{
         std::vector<vector_item<T>*>& get_bucket(int);
 
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
+
+        int first_assign(cluster<double>*, double&, hypercube<T>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
         /* Given a query vector, finds the nearest neighbours */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);

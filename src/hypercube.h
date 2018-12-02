@@ -13,6 +13,10 @@
 
 #include "metrics.h"
 
+template <class T> class cl_management;
+template <class T> class euclidean;
+template <class T> class csimilarity;
+
 /*  Implementation of the class that uses the LSH algorithm with hypercube*/
 
 /* Class of hypercube that holds all the metrics */
@@ -37,6 +41,8 @@ class hypercube{
         /* Add a new vector in the hash table */
         void add_vector(vector_item<T>*);
 
+        void assign_clusters(cl_management<T>&);
+
         /* Finds ANN of given vector, searching in hash table */
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&);
 
@@ -45,4 +51,6 @@ class hypercube{
 
         /* Find total size of structure in bytes */
         long int get_total_size();
+        int get_probes();
+        int get_M();
 };

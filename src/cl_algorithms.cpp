@@ -12,6 +12,7 @@
 
 #include "cl_algorithms.h"
 #include "lsh.h"
+#include "hypercube.h"
 
 using namespace std;
 
@@ -20,6 +21,7 @@ template class cl_init_kmeans<double>;
 
 template class cl_assign_lloyd<double>;
 template class cl_assign_lsh<double>;
+template class cl_assign_hc<double>;
 
 template class cl_update_kmeans<double>;
 template class cl_update_pam<double>;
@@ -283,9 +285,9 @@ int cl_assign_lloyd<T>::get_alg_id(){
 
 
 
-// ///////////////////
-// // CL_ASSIGN_LSH //
-// ///////////////////
+///////////////////
+// CL_ASSIGN_LSH //
+///////////////////
 template <class T>
 void cl_assign_lsh<T>::init_lsh(int metric, int L, int hfs_num, int n){
     this->lsh = new LSH<T>(metric, L, hfs_num, n);
@@ -304,6 +306,32 @@ void cl_assign_lsh<T>::add_vector(vector_item<T>* new_vector){
 template <class T>
 void cl_assign_lsh<T>::assign_clusters(cl_management<T>& cl){
     lsh->assign_clusters(cl);
+} 
+
+
+
+
+//////////////////
+// CL_ASSIGN_HC //
+//////////////////
+template <class T>
+void cl_assign_hc<T>::init_hc(int metric, int hfs_num, int probes, int hc_M){
+    this->hc = new hypercube<T>(metric, hfs_num, probes, hc_M);
+}
+
+template <class T>
+void cl_assign_hc<T>::add_vector(vector_item<T>* new_vector){
+    this->hc->add_vector(new_vector);
+}
+
+template <class T>
+int cl_assign_hc<T>::get_alg_id(){
+    return 3;
+}
+
+template <class T>
+void cl_assign_hc<T>::assign_clusters(cl_management<T>& cl_manage){
+    this->hc->assign_clusters(cl_manage);
 } 
 
 

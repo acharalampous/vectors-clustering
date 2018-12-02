@@ -19,7 +19,8 @@
 
 using namespace std;
 
-template class hypercube<int>;
+//template class hypercube<int>;
+template class hypercube<double>;
 
 /*  Implementation of all functions of the class
  *  that is used for hypercube. Definitions found in
@@ -86,7 +87,7 @@ void hypercube<T>::add_vector(vector_item<T>* new_vector){
     if(metric == 1){ // use euclidean
         k = eu_table->get_k(); // get number of hash functions
         vector<int>* hvalues = new vector<int>;
-        array<int, D>& vec = new_vector->get_points();
+        array<T, D>& vec = new_vector->get_points();
 
         for(int i = 0; i < k; i++){
             /* Get hash function value */
@@ -110,12 +111,74 @@ void hypercube<T>::add_vector(vector_item<T>* new_vector){
 }
 
 template <class T>
+void hypercube<T>::assign_clusters(cl_management<T>& cl_manage){
+    vector<cluster<T>*>& clusters = cl_manage.get_clusters();
+    int num_of_centroids = clusters.size(); // get number of centroids to be checked
+    vector<unordered_set<string>*> checked_set; // set that holds items that were checked
+
+    vector<vector<vector_check*>*> vectors_to_check; // avoid finding vectors and recalculating same distances 
+    vector<cluster_info*> vectors_info = cl_manage.get_vectors_info();
+
+    int vectors_left = vectors_info.size();
+
+    for(int i = 0; i < num_of_centroids; i++){
+        checked_set.push_back(new unordered_set<string>);
+        vectors_to_check.push_back(new vector<vector_check*>);
+
+        vectors_left -= clusters[i]->get_centroid_type();
+    }
+
+    dist_func dist = cl_manage.get_dist_func();
+    double r = get_starting_r(clusters, dist);
+
+    /* Euclidean will be used in HC */
+    if(eu_table != NULL){
+        for(int i = 0; i < num_of_centroids; i++){
+            eu_table->first_assign(clusters[i], r, *this, *(vectors_to_check[i]), vectors_info, vectors_left);
+        }
+        while(1){
+            int flag = 0;
+            r = r * 2;
+            
+            for(int i = 0; i < num_of_centroids; i++){
+                flag += add_to_clusters(clusters[i], r, *(vectors_to_check[i]), vectors_info, vectors_left);
+            }
+
+            /* Check if changes were made */
+            if(flag == 0 || vectors_left == 0)
+                break;
+        }
+
+        final_assign(cl_manage);
+    }
+    else if(cs_table != NULL){
+        for(int i = 0; i < num_of_centroids; i++){
+            cs_table->first_assign(clusters[i], r, *this, *(vectors_to_check[i]), vectors_info, vectors_left);
+        }
+
+        while(1){
+            int flag = 0;
+            r = r * 2;
+            
+            for(int i = 0; i < num_of_centroids; i++){
+                flag += add_to_clusters(clusters[i], r, *(vectors_to_check[i]), vectors_info, vectors_left);
+            }
+
+            /* Check if changes were made */
+            if(flag == 0 || vectors_left == 0)
+                break;
+        }
+        final_assign(cl_manage);
+    }
+}
+
+template <class T>
 void hypercube<T>::findANN(vector_item<T>& query, float radius, float& min_dist, string& ANN_name, ofstream& output){   
     
     if(metric == 1){ // euclidean will be used
         int k = eu_table->get_k(); // get number of hash functions
 
-        array<int, D>& vec = query.get_points();
+        array<T, D>& vec = query.get_points();
         
         /* Find bucket num of query */
         int bucket_num = 0;
@@ -219,7 +282,7 @@ void hypercube<T>::findANN(vector_item<T>& query, float radius, float& min_dist,
         int f = 0; // f(p) function <-> bucket index 
 	
         /* Get vector points */
-        array<int, D>* vec_points = &(query.get_points());
+        array<T, D>* vec_points = &(query.get_points());
 
         /* Get all hash functions values */
         for(int i = 0; i < k; i++){
@@ -391,4 +454,14 @@ long int hypercube<T>::get_total_size(){
     }
     
     return total_size;
+}
+
+template <class T>
+int hypercube<T>::get_probes(){
+    return this->probes;
+}
+
+template <class T>
+int hypercube<T>::get_M(){
+    return this->M;
 }

@@ -11,11 +11,12 @@
 #include "dataset.h"
 #include "clusters.h"
 #include "lsh.h"
+#include "hypercube.h"
 
-template<class T> class cl_management;
-template<class T> class cluster;
+template <class T> class cl_management;
+template <class T> class cluster;
 template <class T> class LSH;
-
+template <class T> class hypercube;
 
 /* Pointer to metric function */
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
@@ -77,8 +78,8 @@ class cl_assign_algorithm{
 
         /* LSH / HC */
         virtual void init_lsh(int a, int b, int c, int d) { }
+        virtual void init_hc(int a, int b, int c, int d) { }
         virtual void add_vector(vector_item<T>* a) { }
-
 
 };
 
@@ -106,6 +107,20 @@ class cl_assign_lsh: public cl_assign_algorithm<T>{
         void add_vector(vector_item<T>*);
 
         void assign_clusters(cl_management<T>&);   
+};
+
+template <class T>
+class cl_assign_hc: public cl_assign_algorithm<T>{
+    private:
+        hypercube<T>* hc;
+    public:
+        void init_hc(int, int, int, int);
+        
+        int get_alg_id();
+
+        void add_vector(vector_item<T>*);
+
+        void assign_clusters(cl_management<T>&);
 };
 
 
