@@ -474,6 +474,39 @@ double calculate_b(vector_item<T>& query, cluster<T>* cl, dist_func& dist){
     return b_value;
 }
 
+double get_starting_r(vector<cluster<double>*>& clusters, dist_func& dist){
+    int num_of_clusters = clusters.size(); // get number of clusters
+    double min_distance = 0.0;
+    vector<vector_item<double>*> centroids;
+
+    /* Get all clusters from the begining, to save additional fetchs */ 
+    for(int i = 0; i < num_of_clusters; i++)
+        centroids.push_back(clusters[i]->get_centroid());
+
+    /* Initialize min distance */
+    min_distance = dist(*centroids[0], *centroids[1]);
+    for(int i = 2; i < num_of_clusters; i++){
+        double curr_dist = dist(*centroids[0], *centroids[i]);
+        if(curr_dist <= min_distance){
+            min_distance = curr_dist;
+        }
+    }
+
+    /* Check for all clusters the distance between centroids */ 
+    for(int i = 1; i < num_of_clusters; i++){
+        for(int j = i + 1; j < num_of_clusters; j++){
+            double curr_dist = dist(*centroids[i], *centroids[j]);
+            if(curr_dist <= min_distance){
+                min_distance = curr_dist;
+            }
+        }
+    }
+
+
+    return min_distance / 2.0;
+}
+
+
 
 int new_execution(ifstream& input, ifstream& query, ofstream& output){
     string choice;

@@ -8,13 +8,14 @@
 /********************************/
 #include <iostream>
 #include <unordered_set>
+#include <string>
 
 #include "lsh.h"
 #include "metrics.h"
 
 using namespace std;
 
-template class LSH<int>;
+//template class LSH<int>;
 template class LSH<double>;
 
 /*  Implementation of all functions of the class
@@ -64,34 +65,33 @@ void LSH<T>::add_vector(vector_item<T>* new_vector){
     }
 }
 
-// template <class T>
-// void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
-//     vector<cluster<T>*> clusters = cl.get_clusters();
-//     int num_of_centroids = clusters.size(); // get number of centroids to be checked
-//     vector<unordered_set<int>> checked_set; // set that holds items that were checked
+template <class T>
+void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
+    vector<cluster<T>*>& clusters = cl_manage.get_clusters();
+    int num_of_centroids = clusters.size(); // get number of centroids to be checked
+    vector<unordered_set<string>*> checked_set; // set that holds items that were checked
 
-//     vector<vector<vector_check<T>*>> vectors_to_check; // avoid finding vectors and recalculating same distances 
-//     vector<cluster_info*> vectors_info = cl.get_vectors_info();
+    vector<vector<vector_check*>*> vectors_to_check; // avoid finding vectors and recalculating same distances 
+    vector<cluster_info*> vectors_info = cl_manage.get_vectors_info();
 
-//     int vectors_left = vectors_info.size();
+    int vectors_left = vectors_info.size();
 
-//     for(int i = 0; i < num_of_centroids; i++){
-//         checked_set.push_back(unordered_set<string>);
-//         vectors_to_check.push_back(vector<vector_item<T>*>);
+    for(int i = 0; i < num_of_centroids; i++){
+        checked_set.push_back(new unordered_set<string>);
+        vectors_to_check.push_back(new vector<vector_check*>);
 
-//         vectors_left -= clusters[i]->get_centroid_type();
-//         buckets_left.push_back(this->L);
-//     }
+        vectors_left -= clusters[i]->get_centroid_type();
+    }
 
-//     double r = get_starting_r(cl, cl.get_dist_func());
+    dist_func dist = cl_manage.get_dist_func();
+    double r = get_starting_r(clusters, dist);
 
-//     for(int i = 0; i < num_of_centroids; i++){
-//         for(int j = 0; j < eu_tables.size(); j++){
-//             int res = eu_tables[j]->first_assign(clusters, i, r, checked_set[i], vectors_to_check[i], vectors_info, vectors_left);
-//         }
-//     }
-
-// }
+    for(int i = 0; i < num_of_centroids; i++){
+        for(unsigned int j = 0; j < eu_tables.size(); j++){
+            int res = eu_tables[j]->first_assign(clusters[i], r, *(checked_set[i]), *(vectors_to_check[i]), vectors_info, vectors_left);
+        }
+    }
+}
 
 template <class T>
 void LSH<T>::findANN(vector_item<T>& query, float radius, float& min_dist, string& ANN_name, ofstream& output){

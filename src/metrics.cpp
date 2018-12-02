@@ -17,16 +17,16 @@
 
 using namespace std;
 
-template class euclidean_vec<int>;
+// template class euclidean_vec<int>;
 template class euclidean_vec<double>;
 
-template class euclideanHF<int>;
+// template class euclideanHF<int>;
 template class euclideanHF<double>;
 
-template class euclidean<int>;
+// template class euclidean<int>;
 template class euclidean<double>;
 
-template class csimilarity<int>;
+// template class csimilarity<int>;
 template class csimilarity<double>;
 
 /*  Implementation of all functions of the metrics
@@ -217,6 +217,71 @@ template <class T>
 void euclidean<T>::add_vector(vector_item<T>* new_vec, vector<int>* hvalues, int index){
 	buckets[index].push_back(new euclidean_vec<T>(new_vec, hvalues));
 }
+
+
+
+template <class T>
+int euclidean<T>::first_assign(cluster<double>* cl, double& r, unordered_set<string>& checked_set, 
+                               vector<vector_check*>& vectors_to_check, 
+							   vector<cluster_info*>& vectors_info, int& vectors_left){
+	
+	int cluster_num = cl->get_cluster_num();
+	vector_item<T>* query = cl->get_centroid();
+	
+	vector<int> hvalues; // values returned from hash functions
+	int f; // f(p) function <-> bucket index
+
+	/* First we must find the bucket that corresponds to query */
+	/* Get vector points */
+	array<T, D>* query_points = &(query->get_points());
+
+	/* Get all hash functions values */
+	for(int i = 0; i < k; i++)
+		hvalues.push_back(hfs[i].getValue(*query_points));
+
+	/* Compute f(p) */
+	f = get_bucket_num(hvalues);
+
+	vector<euclidean_vec<T>*>& buck = get_bucket(f);
+
+	/* Check for items in radius */
+	for(unsigned int i = 0; i < buck.size(); i++){
+		euclidean_vec<T>* cur_vec = buck[i]; // get current vector
+
+		vector_item<T>& item = cur_vec->get_vec();
+		string& item_id = item.get_id(); // get item id
+		
+		/* Check if item was not checked already */
+		if(!in_set(checked_set, item_id)){
+			checked_set.insert(item_id);
+			if(comp_gs(cur_vec->get_g(), hvalues)){ // check if same 
+				double dist = eucl_distance<double>(*query, item);
+
+				if(dist <= r){
+					int item_index = item.get_index();
+
+					/* Vector is in radius, must check if its already assigned */
+					if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
+						vectors_info[i]->set_cluster(cluster_num);
+						vectors_info[i]->set_distance(dist);
+
+						vectors_left--;
+					}
+					else if(dist <= vectors_info[i]->get_distance()){
+							vectors_info[i]->set_cluster(cluster_num);
+							vectors_info[i]->set_distance(dist);
+					}
+				}
+				else if(dist <= vectors_info[i]->get_distance()){
+					vectors_to_check.push_back(new vector_check(&item, dist));
+				}
+			}
+		}
+	}
+
+	return checked_set.size();
+}
+
 
 template <class T>
 vector<euclidean_vec<T>*>& euclidean<T>::get_bucket(int index){

@@ -16,9 +16,23 @@
 #include "dataset.h"
 #include "clusters.h"
 
+
+
 /*  Header file for all variant functions and structs used
  *  to complete the LSH algorithm.
  */
+
+template <class T> class cluster;
+
+typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
+
+typedef struct vector_check{
+    vector_item<double>* item;
+    double distance;
+
+    vector_check(vector_item<double>* item, double d) : item(item), distance(d){ }
+}vector_check;
+
 
 /* Extract parameters that were given during execution */ 
 int get_parameters(int, char**, std::string&, std::string&, std::string&, int&, int&);
@@ -77,6 +91,11 @@ int get_second_best(vector_item<T>&, int, std::vector<cluster<T>*>&, dist_func&)
 /* distance from all the vectors in the cluster, using the metric provided   */
 template <class T>
 double calculate_b(vector_item<T>&, cluster<T>*, dist_func&);
+
+/* Given a vector of clusters, find and return the starting radius for range     */
+/* search in lsh/hc. The radius equals the minimum distance between all centrods */
+/* dived by 2 (R = min_dist / 2)                                                 */
+double get_starting_r(std::vector<cluster<double>*>&, dist_func&);
 
 /* Asks user if he wants to continue to a new execution and if he wants */
 /* to use different files, returning the corresponding choice */

@@ -18,6 +18,7 @@ template class cluster<double>;
 template class cl_management<double>;
 
 
+
 /*  Implementation of all functions of cluster_info
  *  Definitions found in clusters.h.
  */

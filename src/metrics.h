@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#include "utils.h"
 #include "dataset.h"
 
 #define DEFAULT_K 4 // default number of hash functions(LSH)
@@ -26,6 +27,10 @@
 #define MIN_Ri -40 
 #define MAX_Ri 40
 
+
+template <class T> class cluster;
+class vector_check;
+class cluster_info;
 
 /*  Implementations of all metrics used in LSH  */
 
@@ -105,6 +110,8 @@ class euclidean{
 
         /* Returns a pointer to the bucket with the given index */
         std::vector<euclidean_vec<T>*>& get_bucket(int);
+
+        int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
         /* Given a query vector, finds the nearest neighbours(for LSH) */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);

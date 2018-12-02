@@ -10,10 +10,15 @@
 #include <string>
 #include <vector>
 
+#include "utils.h"
 #include "metrics.h"
 #include "clusters.h"
 
 #define DEFAULT_L 5 // default number of hash tables 
+
+template <class T> class cl_management;
+template <class T> class euclidean;
+template <class T> class csimilarity;
 
 /*  Implementation of the class that uses the LSH algorithm */
 
@@ -32,7 +37,7 @@ class LSH{
         /* Add a new vector in all the hash tables */
         void add_vector(vector_item<T>*);
 
-        //void assign_clusters(cl_management<T>&);
+        void assign_clusters(cl_management<T>&);
 
         /* Finds ANN of given vector, searching in all hash tables */
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&);
