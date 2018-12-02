@@ -218,6 +218,10 @@ void euclidean<T>::add_vector(vector_item<T>* new_vec, vector<int>* hvalues, int
 	buckets[index].push_back(new euclidean_vec<T>(new_vec, hvalues));
 }
 
+template <class T>
+vector<euclidean_vec<T>*>& euclidean<T>::get_bucket(int index){
+	return buckets[index];
+}
 
 
 template <class T>
@@ -254,40 +258,74 @@ int euclidean<T>::first_assign(cluster<double>* cl, double& r, unordered_set<str
 		/* Check if item was not checked already */
 		if(!in_set(checked_set, item_id)){
 			checked_set.insert(item_id);
-			if(comp_gs(cur_vec->get_g(), hvalues)){ // check if same 
+			if(comp_gs(cur_vec->get_g(), hvalues)){ // check if same g(s)
 				double dist = eucl_distance<double>(*query, item);
-
+				
+				int item_index = item.get_index();
+				/* Check if distance is in range */
 				if(dist <= r){
-					int item_index = item.get_index();
 
 					/* Vector is in radius, must check if its already assigned */
 					if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
-						vectors_info[i]->set_cluster(cluster_num);
-						vectors_info[i]->set_distance(dist);
+						vectors_info[item_index]->set_cluster(cluster_num);
+						vectors_info[item_index]->set_distance(dist);
 
 						vectors_left--;
 					}
-					else if(dist <= vectors_info[i]->get_distance()){
-							vectors_info[i]->set_cluster(cluster_num);
-							vectors_info[i]->set_distance(dist);
+					else if(dist <= vectors_info[item_index]->get_distance()){ // assigned, check for smaller distance
+							vectors_info[item_index]->set_cluster(cluster_num);
+							vectors_info[item_index]->set_distance(dist);
 					}
 				}
-				else if(dist <= vectors_info[i]->get_distance()){
+				/* If not yet assigned, check for distance, so it can be checked later */ 
+				else if(vectors_info[item_index]->get_cluster_num() == -1 || dist <= vectors_info[item_index]->get_distance()){
 					vectors_to_check.push_back(new vector_check(&item, dist));
 				}
 			}
 		}
 	}
 
-	return checked_set.size();
+	/* Return vectors left to check */
+	return vectors_to_check.size();
 }
-
 
 template <class T>
-vector<euclidean_vec<T>*>& euclidean<T>::get_bucket(int index){
-	return buckets[index];
-}
+int euclidean<T>::assign_clusters(cluster<double>* cl, double& r, vector<vector_check*>& vectors_to_check, vector<cluster_info*>& vectors_info, int& vectors_left){
+	int cluster_num = cl->get_cluster_num();
+	int changes = 0;
 
+	int num_of_vectors = vectors_to_check.size();
+
+	/* Check all vectors that were collected before */
+	for(int i = 0; i < num_of_vectors; i++){
+		vector_item<T>& item = *(vectors_to_check[i]->item);
+
+		/* Check if item was not checked already */
+		double dist = vectors_to_check[i]->distance;
+		if(dist <= r){
+			int item_index = item.get_index();
+
+			/* Vector is in radius, must check if its already assigned */
+			if(vectors_info[item_index]->get_cluster_num() == -1){ // not assigned
+				vectors_info[item_index]->set_cluster(cluster_num);
+				vectors_info[item_index]->set_distance(dist);
+				vectors_left--;
+				changes++; // changes were made
+			}
+			else if(dist <= vectors_info[item_index]->get_distance()){ // vector is assigned, check if less distance
+					vectors_info[item_index]->set_cluster(cluster_num);
+					vectors_info[item_index]->set_distance(dist);
+			}
+
+			delete vectors_to_check[i];
+			
+			num_of_vectors--;
+			i--;
+			vectors_to_check.erase(vectors_to_check.begin() + i + 1); 	
+		}
+	}
+	return changes;
+}
 
 template <class T>
 void euclidean<T>::findANN(vector_item<T>& query, float radius, float& min_dist, string& NN_name, ofstream& output, unordered_set<string>& checked_set){

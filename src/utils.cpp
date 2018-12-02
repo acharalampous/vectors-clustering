@@ -487,7 +487,7 @@ double get_starting_r(vector<cluster<double>*>& clusters, dist_func& dist){
     min_distance = dist(*centroids[0], *centroids[1]);
     for(int i = 2; i < num_of_clusters; i++){
         double curr_dist = dist(*centroids[0], *centroids[i]);
-        if(curr_dist <= min_distance){
+        if(curr_dist <= min_distance && curr_dist != 0.0){
             min_distance = curr_dist;
         }
     }
@@ -496,7 +496,7 @@ double get_starting_r(vector<cluster<double>*>& clusters, dist_func& dist){
     for(int i = 1; i < num_of_clusters; i++){
         for(int j = i + 1; j < num_of_clusters; j++){
             double curr_dist = dist(*centroids[i], *centroids[j]);
-            if(curr_dist <= min_distance){
+            if(curr_dist <= min_distance && curr_dist != 0.0){
                 min_distance = curr_dist;
             }
         }
@@ -504,6 +504,54 @@ double get_starting_r(vector<cluster<double>*>& clusters, dist_func& dist){
 
 
     return min_distance / 2.0;
+}
+
+void final_assign(cl_management<double>& cl_manage){
+    dataset<double>* all_vectors = cl_manage.get_dataset();
+    vector<cluster_info*>& vectors_info = cl_manage.get_vectors_info();
+    vector<cluster<double>*>& clusters = cl_manage.get_clusters();
+    
+    dist_func dist_function = cl_manage.get_dist_func();
+
+    int k = cl_manage.get_k(); // get number of total clusters
+    int num_of_vectors = all_vectors->get_counter(); // get num of vectors
+
+    /* Assign all non-centroids in dataset, to nearest centroid's cluster */ 
+    for(int i = 0; i < num_of_vectors; i++){
+        /* Check if not centroid */
+        if(vectors_info[i]->get_is_centroid() == 1){
+            continue;
+        }
+
+        vector_item<double>* curr_item = all_vectors->get_item(i);
+
+        int cluster_num = vectors_info[i]->get_cluster_num();
+        /* Check if cluster for current vector was found */
+        if(cluster_num != -1){
+            clusters[cluster_num]->add_vector(curr_item);
+            continue;
+        }
+
+        /* Get current vector */
+        double min_distance = 0.0;
+        
+        /* Check for all centroids and find the nearest */
+        for(int j = 0; j < k; j++){
+            vector_item<double>* curr_centroid = clusters[j]->get_centroid();
+
+            /* Get distance and check if minimum */
+            double dist = dist_function(*curr_item, *curr_centroid);
+            if(j == 0 || dist <= min_distance){
+                min_distance = dist;
+                cluster_num = j;
+            }
+        }
+
+        clusters[cluster_num]->add_vector(curr_item);
+        
+        vectors_info[i]->set_cluster(cluster_num);
+        vectors_info[i]->set_distance(min_distance);
+    }
 }
 
 

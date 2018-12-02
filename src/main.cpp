@@ -19,7 +19,7 @@ int main(void){
     int hf = 5;
     int init = 1;
     int assign = 2;
-    int upd = 2;
+    int upd = 1;
 
 
     cl_management<double> cl_manage(metric, k, L, hf, init, assign, upd);

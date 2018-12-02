@@ -20,7 +20,7 @@
 #define HC_DEFAULT_K 3 // default number of hash functions(HC)
 #define HC_DEFAULT_M 10 // default points to be checked(HC)
 #define HC_DEFAULT_PROBES 2 // default neighbours to check (HC)
-#define W 400 // window for euclidean
+#define W 2 // window for euclidean
 #define TS_DIVISOR 4 // for tablesize in euclidean
 
 /* For random vector r, in euclidean */
@@ -113,6 +113,7 @@ class euclidean{
 
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
+        int assign_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
         /* Given a query vector, finds the nearest neighbours(for LSH) */ 
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);
 

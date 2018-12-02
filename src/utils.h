@@ -16,6 +16,7 @@
 #include "dataset.h"
 #include "clusters.h"
 
+template <class T> class cl_management;
 
 
 /*  Header file for all variant functions and structs used
@@ -97,6 +98,7 @@ double calculate_b(vector_item<T>&, cluster<T>*, dist_func&);
 /* dived by 2 (R = min_dist / 2)                                                 */
 double get_starting_r(std::vector<cluster<double>*>&, dist_func&);
 
+void final_assign(cl_management<double>&);
 /* Asks user if he wants to continue to a new execution and if he wants */
 /* to use different files, returning the corresponding choice */
 int new_execution(std::ifstream&, std::ifstream&, std::ofstream&);
