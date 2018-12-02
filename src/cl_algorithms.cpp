@@ -11,12 +11,15 @@
 #include <array>
 
 #include "cl_algorithms.h"
+#include "lsh.h"
+
 using namespace std;
 
 template class cl_init_random<double>;
 template class cl_init_kmeans<double>;
 
 template class cl_assign_lloyd<double>;
+template class cl_assign_lsh<double>;
 
 template class cl_update_kmeans<double>;
 template class cl_update_pam<double>;
@@ -272,6 +275,36 @@ void cl_assign_lloyd<T>::assign_clusters(cl_management<T>& cl_manage){
         vectors_info[i]->set_distance(min_distance);
     }
 }
+
+template <class T>
+int cl_assign_lloyd<T>::get_alg_id(){
+    return 1;
+}
+
+
+
+// ///////////////////
+// // CL_ASSIGN_LSH //
+// ///////////////////
+template <class T>
+void cl_assign_lsh<T>::init_lsh(int metric, int L, int hfs_num, int n){
+    this->lsh = new LSH<T>(metric, L, hfs_num, n);
+}
+
+template <class T>
+int cl_assign_lsh<T>::get_alg_id(){
+    return 2;
+}
+
+template <class T>
+void cl_assign_lsh<T>::add_vector(vector_item<T>* new_vector){
+    this->lsh->add_vector(new_vector);
+}
+
+template <class T>
+void cl_assign_lsh<T>::assign_clusters(cl_management<T>& cl){
+    lsh->assign_clusters(cl);
+} 
 
 
 

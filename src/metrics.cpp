@@ -18,9 +18,16 @@
 using namespace std;
 
 template class euclidean_vec<int>;
-template class euclidean<int>;
-template class csimilarity<int>;
+template class euclidean_vec<double>;
 
+template class euclideanHF<int>;
+template class euclideanHF<double>;
+
+template class euclidean<int>;
+template class euclidean<double>;
+
+template class csimilarity<int>;
+template class csimilarity<double>;
 
 /*  Implementation of all functions of the metrics
  *  that are used in LSH. Definitions found in
@@ -81,7 +88,8 @@ void euclidean_vec<T>::print(){
 
 
 /** euclideanHF **/
-euclideanHF::euclideanHF(){
+template <class T>
+euclideanHF<T>::euclideanHF(){
 	random_device rd;
 	mt19937 gen(rd());
 	normal_distribution<float> nd_random(0.0, 1.0);
@@ -97,7 +105,8 @@ euclideanHF::euclideanHF(){
 }
 
 /* Get value of hash function */
-int euclideanHF::getValue(array<int, D>& vec){
+template <class T>
+int euclideanHF<T>::getValue(array<T, D>& vec){
 	/* Calculation of: floor([ ( p * v ) + t) ] / w) */
 
 	float product = vector_product(v, vec);
@@ -106,14 +115,16 @@ int euclideanHF::getValue(array<int, D>& vec){
 	return (int)result;
 }
 
-long int euclideanHF::get_size(){
+template <class T>
+long int euclideanHF<T>::get_size(){
 	long int total_size = 0;
 	total_size += sizeof(*this);
 
 	return total_size;
 }
 
-void euclideanHF::print(){
+template <class T>
+void euclideanHF<T>::print(){
 
 	for (unsigned int i = 0; i < D; i++)
 		cout << i << ". " << v[i] << endl;
@@ -138,7 +149,7 @@ euclidean<T>::euclidean(int k, int dataset_sz) : k(k){
 
 	/* Create hash functions */
 	for(int i = 0; i < k; i++)
-		hfs.push_back(euclideanHF());
+		hfs.push_back(euclideanHF<T>());
 
 	/* Generate random vector r */
 	uniform_int_distribution<int> rand_Z(MIN_Ri,MAX_Ri); 
@@ -177,7 +188,7 @@ int euclidean<T>::get_bucket_num(vector<int>& hvalues){
 }
 
 template <class T>
-int euclidean<T>::get_val_hf(array<int, D>& vec, int index){
+int euclidean<T>::get_val_hf(array<T, D>& vec, int index){
 	return hfs[index].getValue(vec);
 }
 
@@ -187,7 +198,7 @@ void euclidean<T>::add_vector(vector_item<T>* new_vector){
 	int f; // f(p) function <-> bucket index 
 	
 	/* Get vector points */
-	array<int, D>* vec_points = &new_vector->get_points();
+	array<T, D>* vec_points = &new_vector->get_points();
 
 	/* Get all hash functions values */
 	for(int i = 0; i < k; i++)
@@ -220,7 +231,7 @@ void euclidean<T>::findANN(vector_item<T>& query, float radius, float& min_dist,
 
 	/* First we must find the bucket that corresponds to query */
 	/* Get vector points */
-	array<int, D>* query_points = &(query.get_points());
+	array<T, D>* query_points = &(query.get_points());
 
 	/* Get all hash functions values */
 	for(int i = 0; i < k; i++)
@@ -341,7 +352,8 @@ long int euclidean<T>::get_size(){
 /////////////////////////
 /** COSINE SIMILARITY **/
 /////////////////////////
-csimilarityHF::csimilarityHF(){
+template <class T>
+csimilarityHF<T>::csimilarityHF(){
 	random_device rd;
 
 	mt19937 gen(rd());
@@ -353,10 +365,11 @@ csimilarityHF::csimilarityHF(){
 		r[i] = nd_random(gen);
 	}
 
-}
 
+}
 /* Get value of hash function */
-int csimilarityHF::getValue(array<int, D>& vec){
+template <class T>
+int csimilarityHF<T>::getValue(array<T, D>& vec){
 	
 	float product = vector_product(r, vec);
 	
@@ -365,14 +378,16 @@ int csimilarityHF::getValue(array<int, D>& vec){
 
 }
 
-long int csimilarityHF::get_size(){
+template <class T>
+long int csimilarityHF<T>::get_size(){
 	long int total_size = 0;
 	total_size += sizeof(*this);
 
 	return total_size;
 }
 
-void csimilarityHF::print(){
+template <class T>
+void csimilarityHF<T>::print(){
 	for (unsigned int i = 0; i < D; i++)
 		cout << i << ". " << r[i] << endl;
 }
@@ -388,7 +403,7 @@ csimilarity<T>::csimilarity(int k){
 	buckets = new vector<vector_item<T>*>[tableSize];
 
 	for(int i = 0; i < k; i++)
-		hfs.push_back(csimilarityHF());
+		hfs.push_back(csimilarityHF<T>());
 }
 
 template <class T>
@@ -404,7 +419,7 @@ void csimilarity<T>::add_vector(vector_item<T>* new_vector){
 	int f = 0; // f(p) function <-> bucket index 
 	
 	/* Get vector points */
-	array<int, D>* vec_points = &new_vector->get_points();
+	array<T, D>* vec_points = &new_vector->get_points();
 
 	/* Get all hash functions values */
 	for(int i = 0; i < k; i++){
@@ -427,7 +442,7 @@ void csimilarity<T>::findANN(vector_item<T>& query, float radius, float& min_dis
 
 	/* First we must find the bucket that corresponds to query */
 	/* Get vector points */
-	array<int, D>* query_points = &(query.get_points());
+	array<T, D>* query_points = &(query.get_points());
 
 	for(int i = 0; i < k; i++){
 		int temp = hfs[i].getValue(*query_points);
@@ -482,7 +497,7 @@ void csimilarity<T>::findANN(vector_item<T>& query, float radius, float& min_dis
 
 
 template <class T>
-int csimilarity<T>::get_val_hf(array<int, D>& vec, int index){
+int csimilarity<T>::get_val_hf(array<T, D>& vec, int index){
 	return hfs[index].getValue(vec);
 }
 

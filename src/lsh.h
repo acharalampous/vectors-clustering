@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "metrics.h"
+#include "clusters.h"
 
 #define DEFAULT_L 5 // default number of hash tables 
 
@@ -30,6 +31,8 @@ class LSH{
 
         /* Add a new vector in all the hash tables */
         void add_vector(vector_item<T>*);
+
+        //void assign_clusters(cl_management<T>&);
 
         /* Finds ANN of given vector, searching in all hash tables */
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&);

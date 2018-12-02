@@ -15,6 +15,8 @@
 
 using namespace std;
 
+template float vector_product(std::array<float,D>&, std::array<int ,D>&);
+template float vector_product(std::array<float,D>&, std::array<double, D>&);
 template double eucl_distance(vector_item<double>&, vector_item<double>&);
 template double cs_distance(vector_item<double>&, vector_item<double>&);
 template int get_second_best(vector_item<double>&, int, vector<cluster<double>*>&, dist_func&);
@@ -300,7 +302,8 @@ int hamming_dist(int x, int y){
 }
 
 /* Compute inner product of two vectors */
-float vector_product(std::array<float, D>& vec1, std::array<int, D>& vec2){
+template <class T>
+float vector_product(std::array<float, D>& vec1, std::array<T, D>& vec2){
     float product = 0.0;
 
     for(unsigned int i = 0; i < D; i++)

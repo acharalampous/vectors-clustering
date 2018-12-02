@@ -60,6 +60,7 @@ class euclidean_vec{
 
 /** euclideanHF **/
 /* Hash function for euclidean distance metric */
+template <class T>
 class euclideanHF{
     private:
         std::array<float, D> v; // random vector
@@ -67,7 +68,7 @@ class euclideanHF{
     public:
         euclideanHF();
         
-        int getValue(std::array<int,D>&); // get hash value
+        int getValue(std::array<T ,D>&); // get hash value
         long int get_size(); // get sizeof euclidean hf in bytes
 
         /* Debugging */
@@ -82,7 +83,7 @@ class euclidean{
         const int k; // number of hash functions
         long int M; // for locating bucket
         int tableSize; // number of buckets
-        std::vector<euclideanHF> hfs; // hash functions
+        std::vector<euclideanHF<T>> hfs; // hash functions
         std::vector<euclidean_vec<T>*>* buckets; // all buckets
 		std::vector<int> r; // random vector
 	public:
@@ -94,7 +95,7 @@ class euclidean{
         int get_bucket_num(std::vector<int>&);
 
         /* Returns the value of the given hash function for the provided vector */
-        int get_val_hf(std::array<int,D>&, int);
+        int get_val_hf(std::array<T,D>&, int);
 
         /* Add new vector to hash table, computing in what bucket to place */ 
         void add_vector(vector_item<T>*);
@@ -125,6 +126,7 @@ class euclidean{
 
 /** csimilarityHF **/
 /* Hash function for cosine similarity metric */
+template <class T>
 class csimilarityHF{
     private:
         std::array<float, D> r; // random vector
@@ -132,7 +134,7 @@ class csimilarityHF{
         /* Con-De structor */
         csimilarityHF();
         
-        int getValue(std::array<int,D>&); // get hash value
+        int getValue(std::array<T,D>&); // get hash value
         long int get_size(); // get size of struct in bytes
 
         /* Debugging */
@@ -145,7 +147,7 @@ class csimilarity{
 	private:
         int k; // number of hash functions
         int tableSize; // number of buckets
-        std::vector<csimilarityHF> hfs; // hash functions
+        std::vector<csimilarityHF<T>> hfs; // hash functions
         std::vector<vector_item<T>*>* buckets; // all buckets
 	public:
         /* Con-De structor */
@@ -161,7 +163,7 @@ class csimilarity{
         void findANN(vector_item<T>&, float, float&, std::string&, std::ofstream&, std::unordered_set<std::string>&);
 
         /* Returns the value of the hash function given for the provided vector */
-        int get_val_hf(std::array<int,D>&, int);
+        int get_val_hf(std::array<T,D>&, int);
 
         /* Accessors */
         int get_k();

@@ -15,12 +15,14 @@ int main(void){
 
     int metric = 1;
     int k = 50;
+    int L = 4;
+    int hf = 5;
     int init = 1;
-    int assign = 1;
+    int assign = 2;
     int upd = 2;
 
 
-    cl_management<double> cl_manage(metric, k, init, assign, upd);
+    cl_management<double> cl_manage(metric, k, L, hf, init, assign, upd);
     cl_manage.fill_dataset(input);
 
     cl_manage.init_clusters();

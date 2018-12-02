@@ -106,12 +106,16 @@ class cl_management{
 
         int metric; // metric to be used, 1: euclidean, 2: cosine
         int k; // number of total clusters
+        
+        /* In case of lsh or hypercube */
+        int L; // number of tables to be created
+        int hf_num; // number of hash function to be created
 
     public:
         /* Con-De Structor */
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
-        cl_management(int, int, int, int, int);
+        cl_management(int, int, int, int, int, int, int);
         ~cl_management();
 
         /* Given a file stream, get all vectors and assign in dataset */

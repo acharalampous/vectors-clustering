@@ -45,7 +45,8 @@ int get_factorial(int);
 int hamming_dist(int, int);
 
 /* Given two arrays(vectors), calculates and returns their inner product */  
-float vector_product(std::array<float,D>&, std::array<int, D>&);
+template <class T>
+float vector_product(std::array<float,D>&, std::array<T, D>&);
 
 /* Given a number of integers, concantetates them and returns the value */
 long long int h_concantenate(std::vector<int>&);

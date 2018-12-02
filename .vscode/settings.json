@@ -33,6 +33,7 @@
         "utility": "cpp",
         "list": "cpp",
         "unordered_set": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "ctime": "cpp"
     }
 }

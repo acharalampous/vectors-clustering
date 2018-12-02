@@ -10,9 +10,11 @@
 
 #include "dataset.h"
 #include "clusters.h"
+#include "lsh.h"
 
 template<class T> class cl_management;
 template<class T> class cluster;
+template <class T> class LSH;
 
 
 /* Pointer to metric function */
@@ -70,8 +72,13 @@ class cl_assign_algorithm{
 
     public:
         virtual ~cl_assign_algorithm(){}
-
         virtual void assign_clusters(cl_management<T>&) = 0;
+        virtual int get_alg_id() = 0;
+
+        /* LSH / HC */
+        virtual void init_lsh(int a, int b, int c, int d) { }
+        virtual void add_vector(vector_item<T>* a) { }
+
 
 };
 
@@ -81,6 +88,24 @@ class cl_assign_lloyd : public cl_assign_algorithm<T>{
 
     public:
         void assign_clusters(cl_management<T>&);
+
+        int get_alg_id(); // returns algorithm id, in this case 1
+};
+
+
+template <class T>
+class cl_assign_lsh: public cl_assign_algorithm<T>{
+    private:
+        LSH<T>* lsh;
+    public:
+        /* Initializes the lsh with the given parameters */
+        void init_lsh(int, int, int, int);
+
+        int get_alg_id(); // returns algorithm id, in this case 2
+
+        void add_vector(vector_item<T>*);
+
+        void assign_clusters(cl_management<T>&);   
 };
 
 
