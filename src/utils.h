@@ -69,6 +69,7 @@ void printValidConfig();
 
 int read_combination(int&, int&, int&);
 
+void print_exe_details(exe_args&, int, int, int);
 /*  Given a string, it check char-char to see if integer.   */
 /*  Is yes, returns 1, else 0.                              */
 int isNumber(char*);

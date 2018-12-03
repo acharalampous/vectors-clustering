@@ -299,6 +299,12 @@ int cl_assign_lloyd<T>::get_alg_id(){
 // CL_ASSIGN_LSH //
 ///////////////////
 template <class T>
+cl_assign_lsh<T>::~cl_assign_lsh(){
+    if(this->lsh != NULL)
+        delete this->lsh;
+}
+
+template <class T>
 void cl_assign_lsh<T>::init_lsh(int metric, int L, int hfs_num, int n){
     this->lsh = new LSH<T>(metric, L, hfs_num, n);
 }
@@ -324,6 +330,12 @@ void cl_assign_lsh<T>::assign_clusters(cl_management<T>& cl){
 //////////////////
 // CL_ASSIGN_HC //
 //////////////////
+template <class T>
+cl_assign_hc<T>::~cl_assign_hc(){
+    if(this->hc != NULL)
+        delete this->hc;
+}
+
 template <class T>
 void cl_assign_hc<T>::init_hc(int metric, int hfs_num, int probes, int hc_M){
     this->hc = new hypercube<T>(metric, hfs_num, probes, hc_M);

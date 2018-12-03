@@ -224,6 +224,8 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
     /*** Output ***/
     this->silhouette = s_of_cluster;
 
+    delete [] s_values;
+
     return s_total;
 }
 
@@ -393,30 +395,40 @@ template <class T>
 void cl_management<T>::clustering(exe_args& parameters, ofstream& output, int init, int assign, int upd){
     int i = 0;
 
+    /* Open input file */
     ifstream input(parameters.input_file);
     this->fill_dataset(input);
+    cout << "Dataset is created." << endl;
 
     this->tick();
+    cout << "Initializing Clusters..." << endl;
     this->init_clusters();
-    
-    cout << "Done initializing clusters" << endl;
+    cout << "Clusters were Initialized." << endl;
 
+    cout << "Assigning to Clusters for the first time..." << endl;
     this->assign_clusters();
-    cout << "Done assigning to clusters" << endl;
+    cout << "Done assigning to Clusters." << endl;
 
+    cout << "Updating - Assigning until convergence..." << endl;
     while(1){
         int made_changes = this->update_clusters();
         this->assign_clusters();
-        cout << "Iteration #" << i++ << ":" << endl;
+        // cout << "Iteration #" << i++ << ":" << endl;
         if(made_changes == 0 || i >= this->max_updates)
             break;
     }
     this->tock();
     
+    cout << "Calculating Silhouette..." << endl;
     this->silhouette();
-    
+    cout << "Done Calculating Silhouette." << endl;
+
+    cout << "Printing resutls to file..." << endl;
     this->print_to_file(output);
-    cout << "---------------------------------------------" << endl;
+    cout << "Done Printing to file." << endl;
+
+    cout << "Finished Combination." << endl;
+    cout << "-------------------------------------------------------------------------\n" << endl;
 }
 
 template <class T>
@@ -487,9 +499,6 @@ void cl_management<T>::silhouette(){
     double s_total = 0.0; // total silhouette of all vectors */
     int total_vectors = all_vectors->get_counter();
 
-    cout << "--SILHOUETTES--: " << endl;
-    cout << "---------------" << endl;
-    
     /* Calculate silhouette of each cluster */
     for(int i = 0; i < k; i++){
         cluster<T>* curr_cluster = clusters[i];

@@ -234,7 +234,6 @@ int read_config_file(ifstream& conf_file, exe_args& pars){
     string line;
     int flag = -1; // check if neccessary(no defaults) were provided
     while(getline(conf_file, line)){
-        cout << line << endl;
         if(line.compare(0, 19, "number_of_clusters:") == 0){
             string par = line.substr(19, line.length() - 19);
             pars.k = stoi(par);
@@ -300,7 +299,7 @@ int read_combination(int& init, int& assign, int& update){
         cout << "\t 2 K-means++" << endl;
         cout << "\t A Run all combinations" << endl;
         cout << "\t X Abort program" << endl;
-        cout << "My choice: ";
+        cout << "\nMy choice: ";
         fflush(stdout);
         
         getline(cin, choice);
@@ -330,7 +329,7 @@ int read_combination(int& init, int& assign, int& update){
         cout << "\t 3 Hypercube Range Search Assignment" << endl;
         cout << "\t A Run all combinations" << endl;
         cout << "\t X Abort program" << endl;
-        cout << "My choice: ";        
+        cout << "\nMy choice: ";        
         fflush(stdout);
         
         getline(cin, choice);
@@ -363,7 +362,7 @@ int read_combination(int& init, int& assign, int& update){
         cout << "\t 2 Partinioning Around Medoids(PAM)" << endl;
         cout << "\t A Run all combinations" << endl;
         cout << "\t X Abort program" << endl;
-        cout << "My choice: ";
+        cout << "\nMy choice: ";
         fflush(stdout);
         
         getline(cin, choice);
@@ -389,6 +388,56 @@ int read_combination(int& init, int& assign, int& update){
 
     return 0;
 }
+
+void print_exe_details(exe_args& pars, int init, int assign, int update){
+    cout << "\nExecution details:" << endl;
+    cout << "------------------" << endl;
+    
+    /* Print clusters */
+    cout << "  *Number of Clusters to be created: " << pars.k << endl;
+
+    /* Print metric */
+    if(pars.metric == 1)
+        cout << "  *Metric: Euclidean" << endl;
+    else if(pars.metric == 2)
+        cout << "  *Metric: Cosine" << endl;
+
+    cout << "  *Maximum number of updates: " << pars.max_updates << endl;    
+
+    /* Print init algorithm */
+    if(init == 1)
+        cout << "  *Initialization Algorithm: (1)Random selection of k points from dataset." << endl;
+    else if(init == 2)
+        cout << "  *Initialization Algorithm: (2)K-means++." << endl;
+    
+    /* Print assign algorithm */
+    if(assign == 1)
+        cout << "  *Assignment Algorithm: (1)Lloyd's Assignment." << endl;
+    if(assign == 2){
+        cout << "  *Assignment Algorithm: (2)LSH Range Search." << endl;
+        cout << "    **Number of Hash Tables: " << pars.L << endl;
+        cout << "    **Number of Hash Functions: " << pars.hf << endl;
+    }
+    if(assign == 3){
+        cout << "  *Assignment Algorithm: (1)Hypercube Range Search." << endl;
+        cout << "    **Number of Hash Functions: " << pars.hf << endl;
+        cout << "    **Number of probes: " << pars.hc_probes << endl;
+        cout << "    **Number of M: " << pars.hc_M << endl;
+    }
+
+    /* Print Update algorithm */
+    if(update == 1)
+        cout << "  *Update Algorithm: (1)K-means." << endl;
+    else if(update == 2)
+        cout << "  *Update Algorithm: (2)Partioning around medoids(PAM)." << endl;
+    
+    cout << "  *Input file: " << pars.input_file << endl;
+    cout << "  *Config file: " << pars.config_file << endl;
+    cout << "  *Output file: " << pars.output_file << endl;
+         
+    cout << endl;
+}
+
 
 int isNumber(char* str){
     char* temp = str;

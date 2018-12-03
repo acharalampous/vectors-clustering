@@ -12,12 +12,14 @@ using namespace std;
 int main(int argc, char* argv[]){
     exe_args parameters;
 
+    /* Get parameters provided from command line */
     int result = get_parameters(argc, argv, parameters);
     if(result == -2){
         printValidParameters();
         return -1;
     }
 
+    /* Check if valid parameters and read config file for settings */
     ofstream output;
     result = validate_parameters(parameters, output);
     if(result == -1){
@@ -32,24 +34,32 @@ int main(int argc, char* argv[]){
         return -2;
     }
 
-    int choice = 1; 
+    /* Algorithms */
     int init;
     int assign;
     int upd;
-    if(parameters.all_combinations == 0){
 
+    int choice = 1; // 0: execute 1 combination, 1: execute all combinations
+
+    /* If -1c was provided, ask user for algorithms */
+    if(parameters.all_combinations == 0){
         choice = read_combination(init, assign, upd);
     }
 
+    /* Execute only one combination */
     if(choice == 0){
+        print_exe_details(parameters, init, assign, upd);
         cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd);   
         cl_manage->clustering(parameters, output, init, assign, upd);    
         delete cl_manage;
-    }
+    } // All Combinations
     else if(choice == 1){
+        cout << "Executing all combinations" << endl;
+        cout << ".........................." << endl;
         for(int init = 1; init <= 2; init++){
             for(int assign = 1; assign <= 3; assign++){
                 for(int upd = 1; upd <= 2; upd++){
+                    print_exe_details(parameters, init, assign, upd);
                     cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd);   
                     cl_manage->clustering(parameters, output, init, assign, upd);    
                     delete cl_manage;
@@ -63,6 +73,8 @@ int main(int argc, char* argv[]){
     }
 
 
-    cout << "DONE" << endl;
+    cout << "Execution finished succesfully!" << endl;
+    cout << "Check " << parameters.output_file << " for results." << endl;
+    
     return 0;
 }

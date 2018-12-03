@@ -170,6 +170,18 @@ void hypercube<T>::assign_clusters(cl_management<T>& cl_manage){
         }
         final_assign(cl_manage);
     }
+
+    /* Delete containter used */
+    for(unsigned int i = 0; i < vectors_to_check.size(); i++){
+        for(unsigned int j = 0; j < vectors_to_check[i]->size(); j++){
+            vector<vector_check*>* temp_vec = vectors_to_check[i];            
+            if(temp_vec->at(j) != NULL){
+                delete temp_vec->at(j);
+            }
+        }
+        delete vectors_to_check[i];
+        delete checked_set[i];
+    }
 }
 
 template <class T>

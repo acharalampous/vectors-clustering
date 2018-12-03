@@ -105,6 +105,8 @@ class cl_assign_lsh: public cl_assign_algorithm<T>{
     private:
         LSH<T>* lsh;
     public:
+        ~cl_assign_lsh();
+
         /* Initializes the lsh with the given parameters */
         void init_lsh(int, int, int, int);
 
@@ -120,6 +122,7 @@ class cl_assign_hc: public cl_assign_algorithm<T>{
     private:
         hypercube<T>* hc;
     public:
+        ~cl_assign_hc();
         void init_hc(int, int, int, int);
         
         int get_alg_id();
