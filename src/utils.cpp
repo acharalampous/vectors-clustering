@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cmath>
 #include <string>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "metrics.h"
@@ -26,223 +27,368 @@ template float exchausting_s(dataset<int>&, vector_item<int>&, int);
 
 /*  All functions implementions that are defined in utils.h */
 
-int get_parameters(int argc, char** argv, string& input_file, string& queryset_file, string& output_file, int& k, int& L){
+exe_args::exe_args(){
+    all_combinations = 1;
+    metric = 1;
+    k = -1;
+    max_updates = 30;
+    L = DEFAULT_L;
+    complete = 0;
+    hf = DEFAULT_K;
+    hc_probes = HC_DEFAULT_PROBES;
+    hc_M = HC_DEFAULT_M;
+    input_file = "";
+    output_file = "";
+    config_file = "";
+}
+
+int get_parameters(int argc, char** argv, exe_args& pars){
     for (int i = 1; i < argc; i += 2){ // get all parameters
-        char par; // parameter given
             
-        par = argv[i][1]; // get parameter
-        switch(par){
-            case 'd':{ // input file provided
-                if(!input_file.empty()){ // input file(dataset) is provided twice
-                    printf("Error in parameters! Input file [-d] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                input_file = argv[i + 1];
-                break;
-            } // end case -d
-            case 'q':{ // query file parameter
-                if(!queryset_file.empty()){ // port given twice
-                    printf("Error in parameters! Query file [-q] is given more than once! Abort.\n");
-                    return -2;
-                }
-                
-                queryset_file = argv[i + 1];
-                break;
-            } // end case -q
-            case 'o':{ // output file parameter
-                if(!output_file.empty()){ // port given twice
-                    printf("Error in parameters! Output file [-o] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                output_file = argv[i + 1];
-                break;
-            } // end case -o
-            case 'k':{ // number of hash functions parameter
-                if(k != -1){ // num of hash functions given twice
-                    printf("Error in parameters! Number of hash functions [-k] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                if(!isNumber(argv[i + 1])){ // num of hash functions is not a number
-                    printf("Error in parameters! Number of hash functions [-k] given is not a number. Abort\n");
-                    return -2;
-                }
-
-                k = atoi(argv[i + 1]);
-                if(k <= 0){ // not positive non-zero number of threads given
-                    printf("Error in parameters! Number of hash functions [-k] is not a positive non-zero number. Abort\n");
-                    return -2;
-                }
-
-                break;
-            } // end case -k
-            case 'L':{ // number of hash tables to be created parameter
-                if(L != -1){ // num of hash tables given twice
-                    printf("Error in parameters! Number of hash tables [-L] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                if(!isNumber(argv[i + 1])){ // num of hash tables is not a number
-                    printf("Error in parameters! Number of hash tables [-L] given is not a number. Abort\n");
-                    return -2;
-                }
-
-                L = atoi(argv[i + 1]);
-                if(L <= 0){ // not positive non-zero number of threads given
-                    printf("Error in parameters! Number of hash functions [-L] is not a positive non-zero number. Abort\n");
-                    return -2;
-                }
-
-                break;
-            } // end case -d
-            default:{
-                printf("Error in parameters. Unknown parameter given [%s]. Abort.\n", argv[i]);
-                return -5;
+        string par(argv[i]); // get parameter
+        if(par.compare("-i") == 0){ // input file provided
+            if(!pars.input_file.empty()){ // input file(dataset) is provided twice
+                printf("Error in parameters! Input file [-i] is given more than once! Abort.\n");
+                return -2;
             }
+
+            pars.input_file = argv[i + 1];
+        
+        } // end if -i
+        else if(par.compare("-c") == 0){ // configuration file parameter
+            if(!pars.config_file.empty()){ // port given twice
+                printf("Error in parameters! Configuration file [-c] is given more than once! Abort.\n");
+                return -2;
+            }
+            
+                pars.config_file = argv[i + 1];
+        } // end if -c
+        else if(par.compare("-o") == 0){ // output file parameter
+            if(!pars.output_file.empty()){ // output file twice
+                printf("Error in parameters! Output file [-o] is given more than once! Abort.\n");
+                return -2;
+            }
+
+            pars.output_file = argv[i + 1];
+        } // end if -o
+        else if(par.compare("-d") == 0) { // metric parameter
+            if(!isNumber(argv[i + 1])){ // metric parameter given is not a number
+                printf("Error in parameters! Metric [-d] given is not a valid number. Should be 1 or 2. Abort\n");
+                return -2;
+            }
+
+            pars.metric = atoi(argv[i + 1]);
+            if(pars.metric != 1 || pars.metric != 2){ // invalid number
+                printf("Error in parameters! Metric [-d] given is not a valid number. Should be 1 or 2. Abort\n");
+                return -2;
+            }
+        } // end if -d
+        else if(par.compare("-complete") == 0){ // complete parameter
+            pars.complete = 1;
+            i--;
+        } // end if -complete
+        else if(par.compare("-1c") == 0){ // only one combination
+            pars.all_combinations = 0;
+            i--;
+        }
+        else{
+            printf("Error in parameters. Unknown parameter given [%s]. Abort.\n", argv[i]);
+            return -2;
         } // end switch
     } // end for
     return 0;
 }
 
+int validate_parameters(exe_args& pars, ofstream& output){
+    
+    /* Get input file */
+    while(1){ // until correct input file is given
 
-int HC_get_parameters(int argc, char** argv, string& input_file, string& queryset_file, string& output_file, int& k, int& probes, int& M){
-    for (int i = 1; i < argc; i += 2){ // get all parameters
-        char par; // parameter given
+        /* Check if input file was provided by parameters */
+        /* Also in case of re-execution, check if user wants another file to be used */
+        if(pars.input_file.empty()){
+            cout << "Please provide path to input file(dataset), or .. to abort: ";
+            fflush(stdout);
+            getline(cin, pars.input_file);
+            fflush(stdin);
+        }
+
+        /* Abort */
+        if(!pars.input_file.compare("..")){ 
+            cout << "No file was given. Abort." << endl;
+            return -1;
+        }
+
+        /* Check if file exists */
+        struct stat buffer;
+        if(stat (pars.input_file.c_str(), &buffer) != 0){
+            cout << "File " << pars.input_file << " does not exist. Try again." << endl;
+            pars.input_file = "";
+            continue;
+        }
+        else{
+            break;
+        }
+    }
+
+    /* Get output file */
+    while(1){ // until correct file is given
+
+        /* Check if output file was provided by parameters */
+        if(pars.output_file.empty()){
+            cout << "Please provide path to output file, or .. to abort: ";
+            fflush(stdout);
+            getline(cin, pars.output_file);
+            fflush(stdin);
+        }
+
+        /* Abort */
+        if(!pars.output_file.compare("..")){
+            cout << "No file was given. Abort." << endl;
+            return -1;
+        }
+
+        output.open(pars.output_file); // open file provided 
+        if(output.is_open()) // file was succesfully opened
+            break;
+    }
+
+    /* Get query file */
+    while(1){ // until correct file is given
             
-        par = argv[i][1]; // get parameter
-        switch(par){
-            case 'd':{ // input file provided
-                if(!input_file.empty()){ // input file(dataset) is provided twice
-                    printf("Error in parameters! Input file [-d] is given more than once! Abort.\n");
-                    return -2;
-                }
+            /* Check if query file was provided by parameters */
+        if(pars.config_file.empty()){
+            cout << "Please provide path to config file, or .. to abort: ";
+            fflush(stdout);
+            getline(cin, pars.config_file);
+            fflush(stdin);
+        }
 
-                input_file = argv[i + 1];
-                break;
-            } // end case -d
-            case 'q':{ // query file parameter
-                if(!queryset_file.empty()){ // port given twice
-                    printf("Error in parameters! Query file [-q] is given more than once! Abort.\n");
-                    return -2;
-                }
-                
-                queryset_file = argv[i + 1];
-                break;
-            } // end case -q
-            case 'o':{ // output file parameter
-                if(!output_file.empty()){ // port given twice
-                    printf("Error in parameters! Output file [-o] is given more than once! Abort.\n");
-                    return -2;
-                }
+        /* Abort */
+        if(!pars.config_file.compare("..")){ 
+            cout << "No file was given. Abort." << endl;
+            return -1;
+        }
 
-                output_file = argv[i + 1];
-                break;
-            } // end case -o
-            case 'k':{ // number of hash functions parameter
-                if(k != -1){ // num of hash functions given twice
-                    printf("Error in parameters! Number of hash functions [-k] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                if(!isNumber(argv[i + 1])){ // num of hash functions is not a number
-                    printf("Error in parameters! Number of hash functions [-k] given is not a number. Abort\n");
-                    return -2;
-                }
-
-                k = atoi(argv[i + 1]);
-                if(k <= 0){ // not positive non-zero number of threads given
-                    printf("Error in parameters! Number of hash functions [-k] is not a positive non-zero number. Abort\n");
-                    return -2;
-                }
-
-                break;
-            } // end case -k
-            case 'p':{ // number of probes parameter
-                string par_str(argv[i]);
-                if(par_str.compare("-probes")){
-                    printf("Error in parameters. Unknown parameter given [%s]. Abort.\n", argv[i]);
-                    return -5;
-                }
-
-                if(probes != -1){ // num of probes given twice
-                    printf("Error in parameters! Number of probes [-probes] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                if(!isNumber(argv[i + 1])){ // num of probes is not a number
-                    printf("Error in parameters! Number of probes [-probes] given is not a number. Abort\n");
-                    return -2;
-                }
-
-                probes = atoi(argv[i + 1]);
-                if(probes <= 0){ // not positive non-zero number of probes given
-                    printf("Error in parameters! Number of probes [-probes] is not a positive non-zero number. Abort\n");
-                    return -2;
-                }
-
-                break;
-            } // end case -d
-            case 'M':{ // number of total points to be checked parameter
-                if(M != -1){ // M given twice
-                    printf("Error in parameters! Number of total points to be checked [-M] is given more than once! Abort.\n");
-                    return -2;
-                }
-
-                if(!isNumber(argv[i + 1])){ // num of probes is not a number
-                    printf("Error in parameters! Number of total points to be checked [-M] given is not a number. Abort\n");
-                    return -2;
-                }
-
-                M = atoi(argv[i + 1]);
-                if(M <= 0){ // not positive non-zero number of M given
-                    printf("Error in parameters! Number of total points to be checked [-M] is not a positive non-zero number. Abort\n");
-                    return -2;
-                }
-
-                break;
-            } // end case -M
-            default:{
-                printf("Error in parameters. Unknown parameter given [%s]. Abort.\n", argv[i]);
-                return -5;
+        /* Check if file exists */
+        struct stat buffer;
+        if(stat (pars.config_file.c_str(), &buffer) != 0){
+            cout << "File " << pars.config_file << " does not exist. Try again." << endl;
+            pars.config_file = "";
+            continue;
+        }
+        
+        ifstream conf;
+        conf.open(pars.config_file); // open file provided 
+        if(conf.is_open()){ // file was succesfully opened
+            int res = read_config_file(conf, pars);
+            conf.close();
+            if(res == -1){
+                cout << "Invalid Configuration file! Number of clusters was not provided. Abort" << endl;
+                return -3;
             }
-        } // end switch
-    } // end for
+            break;
+        }
+    }
+
+    if(pars.metric != 1 && pars.metric != 2){
+        cout << "Invalid metric provided! Abort." << endl;
+        return -2;
+    }
+
+    if(pars.k < 2){
+        cout << "Invalid number of clusters provided. Abort." << endl;
+        return -3;
+    }
+
+    if(pars.hf < 1){
+        cout << "Invalid number of hash functions provided. Abort." << endl;
+        return -3;
+    }
+
+    if(pars.L < 1){
+        cout << "Invalid number of hash tables provided. Abort." << endl;
+        return -3;
+    }
+
+    if(pars.max_updates < 1){
+        cout << "Invalid number of max updates provided. Abort." << endl;
+        return -3;
+    }
+
+    if(pars.hc_probes < 1){
+        cout << "Invalid number of hypercube probes provided. Abort." << endl;
+        return -3;
+    }
+
+    if(pars.hc_M < 1){
+        cout << "Invalid number of hypercube M provided. Abort." << endl;
+        return -3;
+    }
+
     return 0;
+
 }
 
+int read_config_file(ifstream& conf_file, exe_args& pars){
+    string line;
+    int flag = -1; // check if neccessary(no defaults) were provided
+    while(getline(conf_file, line)){
+        cout << line << endl;
+        if(line.compare(0, 19, "number_of_clusters:") == 0){
+            string par = line.substr(19, line.length() - 19);
+            pars.k = stoi(par);
+            flag = 1;        
+        }
+        else if(line.compare(0, 25, "number_of_hash_functions:") == 0){
+            string par = line.substr(25, line.length() - 25);
+            pars.hf = stoi(par);
+        }
+        else if(line.compare(0, 22, "number_of_hash_tables:") == 0){
+            string par = line.substr(22, line.length() - 22);
+            pars.L = stoi(par);
+        }
+        else if(line.compare(0, 12, "max_updates:") == 0){
+            string par = line.substr(12, line.length() - 12);
+            pars.max_updates = stoi(par);
+
+        }
+        else if(line.compare(0, 10, "hc_probes:") == 0){
+            string par = line.substr(10, line.length() - 10);
+            pars.hc_probes = stoi(par);
+        }
+        else if(line.compare(0, 5, "hc_M:") == 0){
+            string par = line.substr(5, line.length() - 5);
+            pars.hc_M = stoi(par);
+        }
+    }
+
+    return flag;
+}
 
 void printValidParameters(){
     cout << "\n*Execute again providing (optionally) the following parameters:" << endl;
-    cout << "\t-d inputFile" << endl;
-    cout << "\t-q queryFile" << endl;
+    cout << "\t-i inputFile" << endl;
+    cout << "\t-c configFile" << endl;
     cout << "\t-o outputFile" << endl;
-    cout << "\t-k K" << endl;
-    cout << "\t-L L" << endl;
+    cout << "\t-d metric" << endl;
+    cout << "\t-complete" << endl;
     cout << "-inputFile: Path to the dataset file" << endl;
-    cout << "-queryFule: Path to the query file" << endl;
+    cout << "-configFile: Path to the config file" << endl;
     cout << "-outputFile: Path to the output file" << endl;
-    cout << "-K: Number of hash functions for each hash table, [>=1]" << endl;
-    cout << "-L: Number of hash tables, [>=1]" << endl;
+    cout << "-metric: 1 for euclidean or 2 for cosine" << endl;
+    cout << "-complete: Print full info for clusters" << endl;
 }
 
-void HC_printValidParameters(){
-    cout << "\n*Execute again providing (optionally) the following parameters:" << endl;
-    cout << "\t-d inputFile" << endl;
-    cout << "\t-q queryFile" << endl;
-    cout << "\t-o outputFile" << endl;
-    cout << "\t-k K" << endl;
-    cout << "\t-probes probes" << endl;
-    cout << "\t-M M" << endl;
-    cout << "-inputFile: Path to the dataset file" << endl;
-    cout << "-queryFule: Path to the query file" << endl;
-    cout << "-outputFile: Path to the output file" << endl;
-    cout << "-K: Number of hash functions for each hash table, [>=1]" << endl;
-    cout << "-probes: Number of neighbouring bucket to be checked, [>=1]" << endl;
-    cout << "-M: Number of total points to be checked for a query, [>=1]" << endl;
+void printValidConfig(){
+    cout << "\n*Execute again providing a config file with the following options. * are mandatory:" << endl;
+    cout << "*number_of_clusters:<int>[>= 2]" << endl;
+    cout << "number_of_hash_functions:<int>[>=1" << endl;
+    cout << "number_of_hash_tables:<int>[>=1]" << endl;
+    cout << "max_updates:<int>[>=1]" << endl;
+    cout << "hc_probes:<int>[>=1]" << endl;
+    cout << "hc_M:<int>[>=1]" << endl;
 }
 
+int read_combination(int& init, int& assign, int& update){
+    string choice;
+
+    /* Assignment algorithm */
+    while(1){
+        cout << "\nPlease choose Initialization Algorithm: " << endl;
+        cout << "\t 1 Random selection of k points from dataset" << endl;
+        cout << "\t 2 K-means++" << endl;
+        cout << "\t A Run all combinations" << endl;
+        cout << "\t X Abort program" << endl;
+        cout << "My choice: ";
+        fflush(stdout);
+        
+        getline(cin, choice);
+        fflush(stdin);
+
+        if(!choice.compare("1")){ // Random Selection
+            init = 1;
+            break;
+        }
+        else if(!choice.compare("2")){ // K-means++
+            init = 2;
+            break;
+        }
+        else if(!choice.compare("A")){ // All Combinations
+            return 1;
+        }
+        else if(!choice.compare("X")){ // Exit
+            return 2;
+        }
+        else
+            cout << "Invalid input given. Try again." << endl;
+    }
+    while(1){
+        cout << "\nPlease choose Assignment Algorithm: " << endl;
+        cout << "\t 1 Lloyd's Assignment" << endl;
+        cout << "\t 2 LSH Range Search Assignment" << endl;
+        cout << "\t 3 Hypercube Range Search Assignment" << endl;
+        cout << "\t A Run all combinations" << endl;
+        cout << "\t X Abort program" << endl;
+        cout << "My choice: ";        
+        fflush(stdout);
+        
+        getline(cin, choice);
+        fflush(stdin);
+
+        if(!choice.compare("1")){ // LLoyd's Assignment
+            assign = 1;
+            break;
+        }
+        else if(!choice.compare("2")){ // LSH
+            assign = 2;
+            break;
+        }
+        else if(!choice.compare("3")){ // Hypercube
+            assign = 3;
+            break;
+        }
+        else if(!choice.compare("A")){ // All Combinations
+            return 1;
+        }
+        else if(!choice.compare("X")){ // Exit
+            return 2;
+        }
+        else
+            cout << "Invalid input given. Try again." << endl;
+    }
+    while(1){
+        cout << "\nPlease choose Update Algorithm: " << endl;
+        cout << "\t 1 K-means" << endl;
+        cout << "\t 2 Partinioning Around Medoids(PAM)" << endl;
+        cout << "\t A Run all combinations" << endl;
+        cout << "\t X Abort program" << endl;
+        cout << "My choice: ";
+        fflush(stdout);
+        
+        getline(cin, choice);
+        fflush(stdin);
+
+        if(!choice.compare("1")){ // Random Selection
+            update = 1;
+            break;
+        }
+        else if(!choice.compare("2")){ // K-means++
+            update = 2;
+            break;
+        }
+        else if(!choice.compare("A")){ // All Combinations
+            return 1;
+        }
+        else if(!choice.compare("X")){ // Exit
+            return 2;
+        }
+        else
+            cout << "Invalid input given. Try again." << endl;
+    }
+
+    return 0;
+}
 
 int isNumber(char* str){
     char* temp = str;

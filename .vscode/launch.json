@@ -10,7 +10,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/cluster",
-            "args": [],
+            "args": ["-i", "twitter_dataset_small_v2.csv",
+                "-c", "cluster.conf", "-o", "output"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src",
             "environment": [],

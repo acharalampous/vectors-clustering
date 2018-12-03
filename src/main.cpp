@@ -9,43 +9,60 @@
 
 using namespace std;
 
-int main(void){
-    int i = 0;
-    ifstream input("twitter_dataset_small_v2.csv");
+int main(int argc, char* argv[]){
+    exe_args parameters;
 
-    int metric = 2;
-    int k = 40;
-    int max_updates = 5;
-    int L = 4;
-    int hf = 5;
-    int hc_probes = 3;
-    int hc_M = 100;
-    int init = 1;
-    int assign = 1;
-    int upd = 1;
-
-
-    cl_management<double> cl_manage(metric, k, L, 1, max_updates, hf, hc_probes, hc_M, init, assign, upd);
-
-    cl_manage.fill_dataset(input);
-
-    cl_manage.tick();
-    cl_manage.init_clusters();
-    
-    cout << "Done initializing clusters" << endl;
-   
-    cl_manage.assign_clusters();
-    cout << "Done assigning to clusters" << endl;
-
-    while(1){
-        int made_changes = cl_manage.update_clusters();
-        cl_manage.assign_clusters();
-        cout << "Iteration #" << i++ << ":" << endl;
-        if(made_changes == 0 || i >= max_updates)
-            break;
+    int result = get_parameters(argc, argv, parameters);
+    if(result == -2){
+        printValidParameters();
+        return -1;
     }
-    cl_manage.tock();
-    cl_manage.silhouette();
-    cl_manage.print_to_file();
-    cout << "-----------------------------------" << endl;
+
+    ofstream output;
+    result = validate_parameters(parameters, output);
+    if(result == -1){
+        return -1;
+    }
+    else if(result == -2){
+        printValidParameters();
+        return -1;
+    }
+    else if(result == -3){
+        printValidConfig();
+        return -2;
+    }
+
+    int choice = 1; 
+    int init;
+    int assign;
+    int upd;
+    if(parameters.all_combinations == 0){
+
+        choice = read_combination(init, assign, upd);
+    }
+
+    if(choice == 0){
+        cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd);   
+        cl_manage->clustering(parameters, output, init, assign, upd);    
+        delete cl_manage;
+    }
+    else if(choice == 1){
+        for(int init = 1; init <= 2; init++){
+            for(int assign = 1; assign <= 3; assign++){
+                for(int upd = 1; upd <= 2; upd++){
+                    cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd);   
+                    cl_manage->clustering(parameters, output, init, assign, upd);    
+                    delete cl_manage;
+                }
+            }
+        }
+    }
+    else if(choice == 2){
+        cout << "Choosed to exit! Abort." << endl;
+        return 1;
+    }
+
+
+    cout << "DONE" << endl;
+    return 0;
 }

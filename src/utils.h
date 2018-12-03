@@ -15,6 +15,7 @@
 
 #include "dataset.h"
 #include "clusters.h"
+#include "lsh.h"
 
 template <class T> class cl_management;
 
@@ -28,6 +29,27 @@ class cluster_info;
 
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
 
+/* Struct that holds all the parameters given through command line and config */
+/* file, for the clustering algorithms                                        */
+typedef struct exe_args{
+    int all_combinations; // 1: execute all 12 combinations, 0: execute specific
+    int metric; // 1: euclidean, 2: cosine
+    int k; // number of clusters to be created
+    int max_updates; // max number of updates-assigns
+    int complete; // for printing
+    int L; // number of hash tables in lsh/hc
+    int hf; // number of hash functions in lsh/hc
+    int hc_probes; // number of probes for lsh/hc
+    int hc_M; // number of M for lsh/hc
+    std::string input_file; // input file
+    std::string output_file; // output file
+    std::string config_file; // configuration file
+
+
+    exe_args();
+
+}exe_args;
+
 typedef struct vector_check{
     vector_item<double>* item;
     double distance;
@@ -37,12 +59,15 @@ typedef struct vector_check{
 
 
 /* Extract parameters that were given during execution */ 
-int get_parameters(int, char**, std::string&, std::string&, std::string&, int&, int&);
-int HC_get_parameters(int, char**, std::string&, std::string&, std::string&, int&, int&, int&);
+int get_parameters(int, char**, exe_args&);
+int validate_parameters(exe_args&, std::ofstream&);
+int read_config_file(std::ifstream&, exe_args&);
 
 /*  Print the valid form of given parameters */
 void printValidParameters();
-void HC_printValidParameters();
+void printValidConfig();
+
+int read_combination(int&, int&, int&);
 
 /*  Given a string, it check char-char to see if integer.   */
 /*  Is yes, returns 1, else 0.                              */

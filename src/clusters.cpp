@@ -298,19 +298,19 @@ void cluster<T>::print(){
 }
 
 template <class T>
-void cluster<T>::print_to_file(){
-    cout << "CLUSTER-" << cluster_num << " {size: " << vectors.size() << " , centroid: ";
+void cluster<T>::print_to_file(ofstream& out){
+    out << "CLUSTER-" << cluster_num << " {size: " << vectors.size() << " , centroid: ";
 
     if(centroid_type == 1){
-        cout << centroid->get_id() << "}" << endl;
+        out << centroid->get_id() << "}" << endl;
     }
     else{
         std::array<double, D>& coordinates = centroid->get_points(); // points of vector
-        cout << coordinates[0]; 
+        out << coordinates[0]; 
         for(int i = 1; i < D; i++)
-            cout << ", " << coordinates[i];
+            out << ", " << coordinates[i];
 
-        cout << "}" << endl;
+        out << "}" << endl;
     }
 }
 
@@ -320,18 +320,18 @@ void cluster<T>::print_to_file(){
 // CL_MANAGEMENT //
 ///////////////////
 template <class T>
-cl_management<T>::cl_management(int metric, int k, int max_updates, int complete, int L, int hf_num, int hc_probes, int hc_M, int init_alg, int assign_alg, int update_alg){
+cl_management<T>::cl_management(exe_args& pars, int init_alg, int assign_alg, int update_alg){
     all_vectors = NULL;
 
-    this->metric = metric;
-    this->k = k;
-    this->max_updates = max_updates;
-    this->L = L;
-    this->hf_num = hf_num;
-    this->hc_probes = hc_probes;
-    this->hc_M = hc_M;
+    this->metric = pars.metric;
+    this->k = pars.k;
+    this->max_updates = pars.max_updates;
+    this->L = pars.L;
+    this->hf_num = pars.hf;
+    this->hc_probes = pars.hc_probes;
+    this->hc_M = pars.hc_M;
     this->avg_silhouette = -1.0;
-    this->complete = complete;
+    this->complete = pars.complete;
 
     /* Create empty clusters */
     for(int i = 0; i < k; i++)
@@ -344,16 +344,12 @@ cl_management<T>::cl_management(int metric, int k, int max_updates, int complete
         init_algorithm = new cl_init_kmeans<T>;
 
     /* Set assign algorithm */
-    if(assign_alg == 1){
+    if(assign_alg == 1)
         assign_algorithm = new cl_assign_lloyd<T>;
-    }
-    else if(assign_alg == 2){
+    else if(assign_alg == 2)
         assign_algorithm = new cl_assign_lsh<T>;
-    }
-    else if(assign_alg == 3){
+    else if(assign_alg == 3)
         assign_algorithm = new cl_assign_hc<T>;
-
-    }
 
     /* Set update algorithm */
     if(update_alg == 1)
@@ -391,6 +387,36 @@ cl_management<T>::~cl_management(){
         delete this->assign_algorithm;
     if(update_algorithm != NULL)
         delete this->update_algorithm;
+}
+
+template <class T>
+void cl_management<T>::clustering(exe_args& parameters, ofstream& output, int init, int assign, int upd){
+    int i = 0;
+
+    ifstream input(parameters.input_file);
+    this->fill_dataset(input);
+
+    this->tick();
+    this->init_clusters();
+    
+    cout << "Done initializing clusters" << endl;
+
+    this->assign_clusters();
+    cout << "Done assigning to clusters" << endl;
+
+    while(1){
+        int made_changes = this->update_clusters();
+        this->assign_clusters();
+        cout << "Iteration #" << i++ << ":" << endl;
+        if(made_changes == 0 || i >= this->max_updates)
+            break;
+    }
+    this->tock();
+    
+    this->silhouette();
+    
+    this->print_to_file(output);
+    cout << "---------------------------------------------" << endl;
 }
 
 template <class T>
@@ -539,53 +565,65 @@ void cl_management<T>::print(){
 }
 
 template <class T>
-void cl_management<T>::print_to_file(){
+void cl_management<T>::print_to_file(ofstream& out){
     int init_num = init_algorithm->get_alg_id();
     int assign_num = assign_algorithm->get_alg_id();
     int upd_num = update_algorithm->get_alg_id();
-    cout << "Algorithm: I" << init_num << "A" << assign_num << "U" << upd_num << endl;
+    out << "------------------------------------------------------------------------------------" << endl;
+    out << "Algorithm: I" << init_num << "A" << assign_num << "U" << upd_num << endl;
 
     if(metric == 1)
-        cout << "Metric: Euclidean" << endl;
+        out << "Metric: Euclidean" << endl;
     else
-        cout << "Metric: Cosine" << endl;
+        out << "Metric: Cosine" << endl;
+    
+    out << endl;
 
     int num_of_clusters = clusters.size();
 
     for(int i = 0; i < num_of_clusters; i++){
-        clusters[i]->print_to_file();
+        clusters[i]->print_to_file(out);
+        out << endl;
     }
 
-    cout << "Clustering_time: " << get_time_elapsed() << "seconds" << endl;
+    out << endl;
 
-    cout << "Silhouette: [" << clusters[0]->get_silhouette();
+    out << "Clustering_time: " << get_time_elapsed() << "seconds" << endl;
+
+    out << "Silhouette: [" << clusters[0]->get_silhouette();
     for(int i = 1; i < num_of_clusters; i++){
-        cout << ", " << clusters[i]->get_silhouette();
+        out << ", " << clusters[i]->get_silhouette();
     }
 
-    cout << ", >> " << this->avg_silhouette << " << ]" << endl;
+    out << ", >> " << this->avg_silhouette << " << ]" << endl;
+
+    out << endl;
 
     if(this->complete == 1){
         for(int i = 0; i < num_of_clusters; i++){
             vector<vector_item<T>*>& vectors = clusters[i]->get_vectors();
             int num_of_vectors = vectors.size();
-            cout << "CLUSTER-" << clusters[i]->get_cluster_num() << " {";
+            out << "CLUSTER-" << clusters[i]->get_cluster_num() << " {";
             
             if(clusters[i]->get_centroid_type() == 1){
-                cout << (clusters[i]->get_centroid())->get_id();
+                out << (clusters[i]->get_centroid())->get_id();
                 for(int j = 0; j < num_of_vectors; j++){
-                    cout << ", " << vectors[j]->get_id();
+                    out << ", " << vectors[j]->get_id();
                 }
             }
             else{
-                cout << vectors[0]->get_id();
+                out << vectors[0]->get_id();
                 for(int j = 1; j < num_of_vectors; j++){
-                    cout << ", " << vectors[j]->get_id();
+                    out << ", " << vectors[j]->get_id();
                 }
             }
             
-            cout << "}" << endl;
+            out << "}" << endl;
+            out << endl;
         }
     }
+    out << "------------------------------------------------------------------------------------" << endl;
+    out << endl;
+
 }
 

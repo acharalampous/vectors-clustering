@@ -11,6 +11,7 @@
 #include <vector>
 #include <ctime>
 
+#include "utils.h"
 #include "dataset.h"
 #include "cl_algorithms.h"
 
@@ -18,6 +19,7 @@ template <class T> class cl_init_algorithm;
 template <class T> class cl_assign_algorithm;
 template <class T> class cl_update_algorithm;
 
+struct exe_args; 
 
 typedef double (*dist_func)(vector_item<double>&, vector_item<double>&);
 
@@ -93,7 +95,7 @@ class cluster{
         void set_centroid_type(int); // sets centroid type 
         
         void print();
-        void print_to_file();
+        void print_to_file(std::ofstream&);
 };
 
 /* Class that has all necessary structs collected */
@@ -127,8 +129,10 @@ class cl_management{
         /* Con-De Structor */
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
-        cl_management(int, int, int, int, int, int, int, int, int, int, int);
+        cl_management(exe_args&, int, int, int);
         ~cl_management();
+
+        void clustering(exe_args&, std::ofstream&, int, int, int);
 
         /* Given a file stream, get all vectors and assign in dataset */
         void fill_dataset(std::ifstream&);
@@ -155,6 +159,6 @@ class cl_management{
         dist_func get_dist_func();
 
         void print();
-        void print_to_file();
+        void print_to_file(std::ofstream&);
 
 };
