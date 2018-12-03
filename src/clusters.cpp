@@ -135,6 +135,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
         ct = 1;
         vector_item<T>* old_centroid = centroid;
         s_values = new double[num_of_vectors + 1];
+        s_values[0] = 0.0; // Initialize centroids value
 
         /* Calculate a(i) of centroid */
         for(int i = 0; i < num_of_vectors; i++){
@@ -148,6 +149,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
             s_values[i + 1] = distance; // initialize and keep distance of i for later
         }
 
+        /* No vectors in cluster, avoid division by 0 */
         if(num_of_vectors == 0){
             delete [] s_values;
             this->silhouette = 0.0;
@@ -169,7 +171,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
         }
         else{
             delete [] s_values;
-            cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+            this->silhouette = 0.0;
             return 0.0;
         }
 
@@ -301,12 +303,14 @@ void cluster<T>::print(){
 
 template <class T>
 void cluster<T>::print_to_file(ofstream& out){
+    /* Print cluster num + size + centroid */
     out << "CLUSTER-" << cluster_num << " {size: " << vectors.size() << " , centroid: ";
 
+    /* Print only id of centroid */
     if(centroid_type == 1){
         out << centroid->get_id() << "}" << endl;
     }
-    else{
+    else{ // must print its points */
         std::array<double, D>& coordinates = centroid->get_points(); // points of vector
         out << coordinates[0]; 
         for(int i = 1; i < D; i++)
@@ -597,17 +601,20 @@ void cl_management<T>::print_to_file(ofstream& out){
 
     out << endl;
 
-    out << "Clustering_time: " << get_time_elapsed() << "seconds" << endl;
+    out << "Clustering_time: " << get_time_elapsed() << " seconds" << endl;
 
-    out << "Silhouette: [" << clusters[0]->get_silhouette();
-    for(int i = 1; i < num_of_clusters; i++){
-        out << ", " << clusters[i]->get_silhouette();
+    double sil = clusters[0]->get_silhouette();
+    out << "Silhouette: [" << sil;
+    for(double i = 1; i < num_of_clusters; i++){
+        sil = clusters[i]->get_silhouette();
+        out << ", " << sil;
     }
 
     out << ", >> " << this->avg_silhouette << " << ]" << endl;
 
     out << endl;
 
+    /* Print every vector's id in each cluster */
     if(this->complete == 1){
         for(int i = 0; i < num_of_clusters; i++){
             vector<vector_item<T>*>& vectors = clusters[i]->get_vectors();

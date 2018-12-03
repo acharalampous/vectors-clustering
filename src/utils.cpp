@@ -27,6 +27,7 @@ template float exchausting_s(dataset<int>&, vector_item<int>&, int);
 
 /*  All functions implementions that are defined in utils.h */
 
+/* Initialize struct with defaults values */
 exe_args::exe_args(){
     all_combinations = 1;
     metric = 1;
@@ -78,7 +79,7 @@ int get_parameters(int argc, char** argv, exe_args& pars){
             }
 
             pars.metric = atoi(argv[i + 1]);
-            if(pars.metric != 1 || pars.metric != 2){ // invalid number
+            if(pars.metric != 1 && pars.metric != 2){ // invalid number
                 printf("Error in parameters! Metric [-d] given is not a valid number. Should be 1 or 2. Abort\n");
                 return -2;
             }
@@ -153,10 +154,10 @@ int validate_parameters(exe_args& pars, ofstream& output){
             break;
     }
 
-    /* Get query file */
+    /* Get configuration file */
     while(1){ // until correct file is given
             
-            /* Check if query file was provided by parameters */
+        /* Check if conf file was provided by parameters */
         if(pars.config_file.empty()){
             cout << "Please provide path to config file, or .. to abort: ";
             fflush(stdout);
@@ -181,8 +182,10 @@ int validate_parameters(exe_args& pars, ofstream& output){
         ifstream conf;
         conf.open(pars.config_file); // open file provided 
         if(conf.is_open()){ // file was succesfully opened
+            /* read configuration and get all parameters from it */
             int res = read_config_file(conf, pars);
             conf.close();
+            /* Check if valid file */
             if(res == -1){
                 cout << "Invalid Configuration file! Number of clusters was not provided. Abort" << endl;
                 return -3;
@@ -191,36 +194,45 @@ int validate_parameters(exe_args& pars, ofstream& output){
         }
     }
 
+    /* Validity check */
+
+    /* Check metric */
     if(pars.metric != 1 && pars.metric != 2){
         cout << "Invalid metric provided! Abort." << endl;
         return -2;
     }
 
+    /* Check number of cluster */
     if(pars.k < 2){
         cout << "Invalid number of clusters provided. Abort." << endl;
         return -3;
     }
 
+    /* Check number of hash function */
     if(pars.hf < 1){
         cout << "Invalid number of hash functions provided. Abort." << endl;
         return -3;
     }
 
+    /* Check number of hash Tables */
     if(pars.L < 1){
         cout << "Invalid number of hash tables provided. Abort." << endl;
         return -3;
     }
 
+    /* Check number of max updates */
     if(pars.max_updates < 1){
         cout << "Invalid number of max updates provided. Abort." << endl;
         return -3;
     }
 
+    /* Check number of probes */
     if(pars.hc_probes < 1){
         cout << "Invalid number of hypercube probes provided. Abort." << endl;
         return -3;
     }
 
+    /* Check number for M for hc */
     if(pars.hc_M < 1){
         cout << "Invalid number of hypercube M provided. Abort." << endl;
         return -3;
@@ -234,29 +246,29 @@ int read_config_file(ifstream& conf_file, exe_args& pars){
     string line;
     int flag = -1; // check if neccessary(no defaults) were provided
     while(getline(conf_file, line)){
-        if(line.compare(0, 19, "number_of_clusters:") == 0){
+        if(line.compare(0, 19, "number_of_clusters:") == 0){ // k
             string par = line.substr(19, line.length() - 19);
             pars.k = stoi(par);
             flag = 1;        
         }
-        else if(line.compare(0, 25, "number_of_hash_functions:") == 0){
+        else if(line.compare(0, 25, "number_of_hash_functions:") == 0){ // hf
             string par = line.substr(25, line.length() - 25);
             pars.hf = stoi(par);
         }
-        else if(line.compare(0, 22, "number_of_hash_tables:") == 0){
+        else if(line.compare(0, 22, "number_of_hash_tables:") == 0){ // L
             string par = line.substr(22, line.length() - 22);
             pars.L = stoi(par);
         }
-        else if(line.compare(0, 12, "max_updates:") == 0){
+        else if(line.compare(0, 12, "max_updates:") == 0){ // max_updates
             string par = line.substr(12, line.length() - 12);
             pars.max_updates = stoi(par);
 
         }
-        else if(line.compare(0, 10, "hc_probes:") == 0){
+        else if(line.compare(0, 10, "hc_probes:") == 0){ // probes
             string par = line.substr(10, line.length() - 10);
             pars.hc_probes = stoi(par);
         }
-        else if(line.compare(0, 5, "hc_M:") == 0){
+        else if(line.compare(0, 5, "hc_M:") == 0){ // M
             string par = line.substr(5, line.length() - 5);
             pars.hc_M = stoi(par);
         }

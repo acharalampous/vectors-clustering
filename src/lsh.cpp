@@ -76,6 +76,7 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
 
     int vectors_left = vectors_info.size();
 
+    /* Initialize cluster helping structs */
     for(int i = 0; i < num_of_centroids; i++){
         checked_set.push_back(new unordered_set<string>);
         vectors_to_check.push_back(new vector<vector_check*>);
@@ -83,6 +84,7 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
         vectors_left -= clusters[i]->get_centroid_type();
     }
 
+    /* Get starting radius */
     dist_func dist = cl_manage.get_dist_func();
     double r = get_starting_r(clusters, dist);
 
@@ -90,6 +92,7 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
     if(eu_tables.size() != 0){
         for(int i = 0; i < num_of_centroids; i++){
             for(unsigned int j = 0; j < eu_tables.size(); j++){
+                /* First gather all canditates for current clusters */
                 eu_tables[j]->first_assign(clusters[i], r, *(checked_set[i]), *(vectors_to_check[i]), vectors_info, vectors_left);
             }
         }
@@ -130,7 +133,7 @@ void LSH<T>::assign_clusters(cl_management<T>& cl_manage){
         final_assign(cl_manage);
     }
 
-    /* Delete containter used */
+    /* Delete containters used */
     for(unsigned int i = 0; i < vectors_to_check.size(); i++){
         for(unsigned int j = 0; j < vectors_to_check[i]->size(); j++){
             vector<vector_check*>* temp_vec = vectors_to_check[i];            

@@ -1,3 +1,11 @@
+/*******************************/
+/* main.cpp */
+
+/* Name:    Andreas Charalampous
+ * A.M :    1115201500195
+ * e-mail:  sdi1500195@di.uoa.gr
+ */
+/********************************/
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -54,19 +62,20 @@ int main(int argc, char* argv[]){
         delete cl_manage;
     } // All Combinations
     else if(choice == 1){
+        cout << ".........................." << endl;
         cout << "Executing all combinations" << endl;
         cout << ".........................." << endl;
         for(int init = 1; init <= 2; init++){
             for(int assign = 1; assign <= 3; assign++){
                 for(int upd = 1; upd <= 2; upd++){
-                    print_exe_details(parameters, init, assign, upd);
-                    cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd);   
-                    cl_manage->clustering(parameters, output, init, assign, upd);    
-                    delete cl_manage;
+                    print_exe_details(parameters, init, assign, upd); // Print all parameters provided
+                    cl_management<double>* cl_manage = new cl_management<double>(parameters, init, assign, upd); // INIT CL_MANAGE   
+                    cl_manage->clustering(parameters, output, init, assign, upd); // CLUSTERING WORK
+                    delete cl_manage; // DESTORY cl_manage
                 }
             }
         }
-    }
+    } // Exit chosen
     else if(choice == 2){
         cout << "Choosed to exit! Abort." << endl;
         return 1;

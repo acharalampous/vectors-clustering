@@ -41,6 +41,7 @@ class hypercube{
         /* Add a new vector in the hash table */
         void add_vector(vector_item<T>*);
 
+        /* Assign vectors to clusters using hc range search */
         void assign_clusters(cl_management<T>&);
 
         /* Finds ANN of given vector, searching in hash table */
@@ -51,6 +52,8 @@ class hypercube{
 
         /* Find total size of structure in bytes */
         long int get_total_size();
+        
+        /* Accessors */
         int get_probes();
         int get_M();
 };

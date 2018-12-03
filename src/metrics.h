@@ -115,8 +115,10 @@ class euclidean{
         /* Returns a pointer to the bucket with the given index */
         std::vector<euclidean_vec<T>*>& get_bucket(int);
 
+        /* Find and gather all candidate vectors using lsh range search */
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
+        /* Find and gather all candidate vectors using hc range search */
         int first_assign(cluster<double>*, double&, hypercube<T>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
         /* Given a query vector, finds the nearest neighbours(for LSH) */ 
@@ -172,8 +174,10 @@ class csimilarity{
         /* Returns a pointer to the bucket with the given index */
         std::vector<vector_item<T>*>& get_bucket(int);
 
+        /* Find and gather all candidate vectors using lsh range search */
         int first_assign(cluster<double>*, double&, std::unordered_set<std::string>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
+        /* Find and gather all candidate vectors using hc range search */
         int first_assign(cluster<double>*, double&, hypercube<T>&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
         /* Given a query vector, finds the nearest neighbours */ 

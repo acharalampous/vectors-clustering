@@ -37,6 +37,7 @@ class LSH{
         /* Add a new vector in all the hash tables */
         void add_vector(vector_item<T>*);
 
+        /* Assign vectors to clusters using lsh ranges search */
         void assign_clusters(cl_management<T>&);
 
         /* Finds ANN of given vector, searching in all hash tables */

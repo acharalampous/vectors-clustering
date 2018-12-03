@@ -50,6 +50,7 @@ typedef struct exe_args{
 
 }exe_args;
 
+/* struct that maps with distance to centroid(LSH/HC) */
 typedef struct vector_check{
     vector_item<double>* item;
     double distance;
@@ -60,13 +61,24 @@ typedef struct vector_check{
 
 /* Extract parameters that were given during execution */ 
 int get_parameters(int, char**, exe_args&);
+
+/* Given the parameters from command line, open conf file */
+/* and check for valid parameters. Returns 0 if ok, else  */
+/* -1 for invalid command line parameters or -2 for inv   */
+/* configuration file                                     */
 int validate_parameters(exe_args&, std::ofstream&);
+
+/* Open config file and read all configuration parameters */
 int read_config_file(std::ifstream&, exe_args&);
 
 /*  Print the valid form of given parameters */
 void printValidParameters();
+
+/* Print the valid form of configuration file */
 void printValidConfig();
 
+/* In case of single combination execution, read algorithms */
+/* from user                                                */
 int read_combination(int&, int&, int&);
 
 void print_exe_details(exe_args&, int, int, int);
@@ -125,8 +137,10 @@ double calculate_b(vector_item<T>&, cluster<T>*, dist_func&);
 /* dived by 2 (R = min_dist / 2)                                                 */
 double get_starting_r(std::vector<cluster<double>*>&, dist_func&);
 
+/* Range search and assign to centroids from vectors(LSH/HC) */
 int add_to_clusters(cluster<double>*, double&, std::vector<vector_check*>&, std::vector<cluster_info*>&, int&);
 
+/* Assing all unassigned vectors to nearest centroid(LSH/HC) */
 void final_assign(cl_management<double>&);
 /* Asks user if he wants to continue to a new execution and if he wants */
 /* to use different files, returning the corresponding choice */

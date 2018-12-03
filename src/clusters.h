@@ -148,7 +148,7 @@ class cl_management{
         /* Timings */
         void tick();
         void tock();
-        double get_time_elapsed();
+        double get_time_elapsed(); // get time between tick and tock
 
         /*Accessors */
         dataset<T>* get_dataset();
