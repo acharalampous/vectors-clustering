@@ -92,6 +92,7 @@ cluster<T>::cluster(int cluster_num){
     this->cluster_num = cluster_num;
     this->centroid_type = -1;
     this->centroid = NULL;
+    this->silhouette = -1.0;
 }
 
 template <class T>
@@ -118,7 +119,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
     double s_of_cluster = 0.0; // Average s(i) of cluster
 
     if(num_of_vectors == 0){
-        cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+        this->silhouette = 0.0;
         return 0.0;
     }
     /* Must not perform silhouette for centroid if it is not in dataset */
@@ -149,7 +150,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
 
         if(num_of_vectors == 0){
             delete [] s_values;
-            cout << "s(" << cluster_num << ") = " << 0.0 << endl;
+            this->silhouette = 0.0;
             return 0.0;
         }
         /* Calculate average a(i) */
@@ -221,7 +222,7 @@ double cluster<T>::evaluation(vector<cluster<T>*>& clusters, dist_func& dist){
     s_of_cluster /= (double)(num_of_vectors + ct);
 
     /*** Output ***/
-    cout << "s(" << cluster_num << ") = " << s_of_cluster << endl;
+    this->silhouette = s_of_cluster;
 
     return s_total;
 }
@@ -263,6 +264,12 @@ int cluster<T>::get_size(){
     return this->vectors.size();
 }
 
+/* Returns silhouette value */
+template <class T>
+double cluster<T>::get_silhouette(){
+    return this->silhouette;
+}
+
 /* Sets new centroid */
 template <class T>
 void cluster<T>::set_centroid(vector_item<T>* new_centroid){
@@ -275,6 +282,12 @@ void cluster<T>::set_centroid_type(int type){
     this->centroid_type = type;
 }
 
+/* Set silhouette */
+template <class T>
+void cluster<T>::set_silhouette(double silhouette){
+    this->silhouette = silhouette;
+}
+
 template <class T>
 void cluster<T>::print(){
     cout << "Cluster #" << this->get_cluster_num() << " || Centroid: " << get_centroid()->get_id() << endl;
@@ -284,21 +297,41 @@ void cluster<T>::print(){
     }
 }
 
+template <class T>
+void cluster<T>::print_to_file(){
+    cout << "CLUSTER-" << cluster_num << " {size: " << vectors.size() << " , centroid: ";
+
+    if(centroid_type == 1){
+        cout << centroid->get_id() << "}" << endl;
+    }
+    else{
+        std::array<double, D>& coordinates = centroid->get_points(); // points of vector
+        cout << coordinates[0]; 
+        for(int i = 1; i < D; i++)
+            cout << ", " << coordinates[i];
+
+        cout << "}" << endl;
+    }
+}
+
 
 
 ///////////////////
 // CL_MANAGEMENT //
 ///////////////////
 template <class T>
-cl_management<T>::cl_management(int metric, int k, int L, int hf_num, int hc_probes, int hc_M, int init_alg, int assign_alg, int update_alg){
+cl_management<T>::cl_management(int metric, int k, int max_updates, int complete, int L, int hf_num, int hc_probes, int hc_M, int init_alg, int assign_alg, int update_alg){
     all_vectors = NULL;
 
     this->metric = metric;
     this->k = k;
+    this->max_updates = max_updates;
     this->L = L;
     this->hf_num = hf_num;
     this->hc_probes = hc_probes;
     this->hc_M = hc_M;
+    this->avg_silhouette = -1.0;
+    this->complete = complete;
 
     /* Create empty clusters */
     for(int i = 0; i < k; i++)
@@ -441,8 +474,26 @@ void cl_management<T>::silhouette(){
 
     s_total /= (double)total_vectors;
 
-    /*** Output ***/
-    cout << "**s_total = " << s_total << endl;
+    this->avg_silhouette = s_total;
+}
+
+/* Get clustering start time */
+template <class T>
+void cl_management<T>::tick(){
+    cl_start = clock();
+}
+
+/* Get clustering end time */
+template <class T>
+void cl_management<T>::tock(){
+    cl_end = clock();
+}
+
+/* Get time elapsed during clustering */
+template <class T>
+double cl_management<T>::get_time_elapsed(){
+    double time_elapsed = double(this->cl_end - this->cl_start) / CLOCKS_PER_SEC;
+    return time_elapsed;
 }
 
 /* Returns pointer to dataset */
@@ -469,6 +520,12 @@ int cl_management<T>::get_k(){
     return this->k;
 }
 
+/* Returns number of max updates to be done */
+template <class T>
+int cl_management<T>::get_max_updates(){
+    return this->max_updates;;
+}
+
 /* Returns the distance function(metric) used */
 template <class T>
 dist_func cl_management<T>::get_dist_func(){
@@ -480,3 +537,55 @@ void cl_management<T>::print(){
     for(unsigned int i = 0; i < clusters.size(); i++)
         clusters[i]->print();
 }
+
+template <class T>
+void cl_management<T>::print_to_file(){
+    int init_num = init_algorithm->get_alg_id();
+    int assign_num = assign_algorithm->get_alg_id();
+    int upd_num = update_algorithm->get_alg_id();
+    cout << "Algorithm: I" << init_num << "A" << assign_num << "U" << upd_num << endl;
+
+    if(metric == 1)
+        cout << "Metric: Euclidean" << endl;
+    else
+        cout << "Metric: Cosine" << endl;
+
+    int num_of_clusters = clusters.size();
+
+    for(int i = 0; i < num_of_clusters; i++){
+        clusters[i]->print_to_file();
+    }
+
+    cout << "Clustering_time: " << get_time_elapsed() << "seconds" << endl;
+
+    cout << "Silhouette: [" << clusters[0]->get_silhouette();
+    for(int i = 1; i < num_of_clusters; i++){
+        cout << ", " << clusters[i]->get_silhouette();
+    }
+
+    cout << ", >> " << this->avg_silhouette << " << ]" << endl;
+
+    if(this->complete == 1){
+        for(int i = 0; i < num_of_clusters; i++){
+            vector<vector_item<T>*>& vectors = clusters[i]->get_vectors();
+            int num_of_vectors = vectors.size();
+            cout << "CLUSTER-" << clusters[i]->get_cluster_num() << " {";
+            
+            if(clusters[i]->get_centroid_type() == 1){
+                cout << (clusters[i]->get_centroid())->get_id();
+                for(int j = 0; j < num_of_vectors; j++){
+                    cout << ", " << vectors[j]->get_id();
+                }
+            }
+            else{
+                cout << vectors[0]->get_id();
+                for(int j = 1; j < num_of_vectors; j++){
+                    cout << ", " << vectors[j]->get_id();
+                }
+            }
+            
+            cout << "}" << endl;
+        }
+    }
+}
+

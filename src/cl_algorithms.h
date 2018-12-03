@@ -34,6 +34,8 @@ class cl_init_algorithm{
         virtual ~cl_init_algorithm(){}
         /* All init algorithms must have this method */
         virtual void init_clusters(cl_management<T>&) = 0;
+        virtual int get_alg_id() = 0;
+
 };
 
 /* Algorithm that selects randomly each centroid of cluster */
@@ -43,6 +45,8 @@ class cl_init_random: public cl_init_algorithm<T>{
 
     public:
         void init_clusters(cl_management<T>&); 
+
+        int get_alg_id();
 
 };
 
@@ -62,6 +66,8 @@ class cl_init_kmeans: public cl_init_algorithm<T>{
         /* Given the probabilities array, perform distribution and return */
         /* the array cell that was chosen, after doing binary search      */
         int get_next_centroid(std::vector<dist_mapping>&);
+        int get_alg_id();
+
 };
 
 
@@ -133,6 +139,7 @@ class cl_update_algorithm{
         virtual ~cl_update_algorithm(){}
 
         virtual int update_clusters(cl_management<T>&) = 0;
+        virtual int get_alg_id() = 0;
 };
 
 template <class T>
@@ -142,6 +149,8 @@ class cl_update_kmeans : public cl_update_algorithm<T>{
     public:
         int update_clusters(cl_management<T>&);
         vector_item<T>* get_new_centroid(cluster<T>&);
+        int get_alg_id();
+
         
 };
 
@@ -155,4 +164,6 @@ class cl_update_pam : public cl_update_algorithm<T>{
         /* Calculates the average distance for every vector in given cluster */
         /* and returns the vector with minimum average distance              */
         vector_item<T>* get_new_centroid(cluster<T>&, dist_func&);
+        int get_alg_id();
+
 };

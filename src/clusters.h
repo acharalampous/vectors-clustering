@@ -9,6 +9,7 @@
 #pragma once
 #include <fstream>
 #include <vector>
+#include <ctime>
 
 #include "dataset.h"
 #include "cl_algorithms.h"
@@ -63,7 +64,7 @@ class cluster{
         int centroid_type; // 1: if centroid in dataset, 0: not in dataset, -1 no centroid
         vector_item<T>* centroid; // pointer to vector in dataset that is centroid
         std::vector<vector_item<T>*> vectors; // holds pointers to all vectors that are in cluster
-
+        double silhouette;
 
     public:
         /* Con-De Structor */
@@ -84,12 +85,15 @@ class cluster{
         vector_item<T>* get_vector(int);
         std::vector<vector_item<T>*>& get_vectors();        
         int get_size();
+        double get_silhouette();
 
         /* Mutators */
         void set_centroid(vector_item<T>*); // sets given vector as centroid
+        void set_silhouette(double); // set silhouette to cluster
         void set_centroid_type(int); // sets centroid type 
         
         void print();
+        void print_to_file();
 };
 
 /* Class that has all necessary structs collected */
@@ -104,9 +108,15 @@ class cl_management{
         cl_update_algorithm<T>* update_algorithm; // algorithm for updating centroids in clusters
         dist_func dist_function; // pointer to distance function, eucliean or cosine
 
+        int max_updates; // max number of total updates to be done
         int metric; // metric to be used, 1: euclidean, 2: cosine
         int k; // number of total clusters
-        
+        double avg_silhouette; // avg silhouette of all points
+        clock_t cl_start; // time started clustering
+        clock_t cl_end; // time ended clustering
+        int complete; // if complete = 1, print every item in cluster
+
+
         /* In case of lsh or hypercube */
         int L; // number of tables to be created
         int hf_num; // number of hash function to be created
@@ -117,7 +127,7 @@ class cl_management{
         /* Con-De Structor */
 
         /* Given the metric, algorithms and number of clusters, initiliaze clusters controlling class */
-        cl_management(int, int, int, int, int, int, int, int, int);
+        cl_management(int, int, int, int, int, int, int, int, int, int, int);
         ~cl_management();
 
         /* Given a file stream, get all vectors and assign in dataset */
@@ -131,13 +141,20 @@ class cl_management{
         /* Calculate and print silhouette of clusters and vectors */
         void silhouette();
 
+        /* Timings */
+        void tick();
+        void tock();
+        double get_time_elapsed();
+
         /*Accessors */
         dataset<T>* get_dataset();
         std::vector<cluster_info*>& get_vectors_info();
         std::vector<cluster<T>*>& get_clusters();
         int get_k();
+        int get_max_updates();
         dist_func get_dist_func();
 
         void print();
+        void print_to_file();
 
 };

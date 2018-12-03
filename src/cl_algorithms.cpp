@@ -72,6 +72,12 @@ void cl_init_random<T>::init_clusters(cl_management<T>& cl_manage){
 }
 
 
+template <class T>
+int cl_init_random<T>::get_alg_id(){
+    return 1;
+}
+
+
 
 ////////////////////
 // CL_INIT_KMEANS //
@@ -230,6 +236,10 @@ int cl_init_kmeans<T>::get_next_centroid(vector<dist_mapping>& probs_array){
     }
 }
 
+template <class T>
+int cl_init_kmeans<T>::get_alg_id(){
+    return 2;
+}
 
 
 
@@ -426,6 +436,10 @@ vector_item<T>* cl_update_kmeans<T>::get_new_centroid(cluster<T>& cl){
     return new_centroid;
 }
 
+template <class T>
+int cl_update_kmeans<T>::get_alg_id(){
+    return 1;
+}
 
 
 ///////////////////
@@ -548,4 +562,9 @@ vector_item<T>* cl_update_pam<T>::get_new_centroid(cluster<T>& cl, dist_func& di
         return cl.get_centroid();
     else
         return cl.get_vector(new_centroid);
+}
+
+template <class T>
+int cl_update_pam<T>::get_alg_id(){
+    return 2;
 }

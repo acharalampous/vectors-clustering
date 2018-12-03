@@ -30,8 +30,9 @@
 
 
 template <class T> class cluster;
-class vector_check;
 class cluster_info;
+class vector_check;
+
 template <class T> class hypercube;
 
 
